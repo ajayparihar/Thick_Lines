@@ -4,55 +4,55 @@
     --bg-color: #0f172a;
     --bg-color-light: #1e293b;
     --bg-color-lighter: #334155;
-    
+
     /* Primary colors */
     --primary-color: #3b82f6;
     --primary-light: #60a5fa;
     --primary-dark: #2563eb;
-    
+
     /* Secondary colors */
     --secondary-color: #8b5cf6;
     --secondary-light: #a78bfa;
     --secondary-dark: #7c3aed;
-    
+
     /* Tertiary/accent colors */
     --accent-color: #f97316;
     --accent-light: #fb923c;
     --accent-dark: #ea580c;
-    
+
     /* UI Colors */
     --success-color: #10b981;
     --error-color: #ef4444;
     --warning-color: #f59e0b;
     --info-color: #0ea5e9;
-    
+
     /* RGBY Drawing colors - maintaining existing drawing colors */
     --red-color: #ef4444;
     --green-color: #10b981;
     --blue-color: #3b82f6;
     --yellow-color: #f59e0b;
-    
+
     /* UI Elements */
     --text-color: #f1f5f9;
     --text-muted: #94a3b8;
     --border-color: rgba(255, 255, 255, 0.12);
-    --glass-bg: rgba(15, 23, 42, 0.75);
-    --glass-border: rgba(255, 255, 255, 0.12);
-    --button-bg: rgba(30, 41, 59, 0.7);
+    --glass-bg: rgba(15, 23, 42, 0.30);
+    --glass-border: rgba(255, 255, 255, 0.10);
+    --button-bg: rgba(30, 41, 59, 0.5);
     --button-hover: rgba(51, 65, 85, 0.8);
-    
+
     /* Layout */
     --header-height: 70px;
     --active-color-border: 3px solid white;
     --border-radius-sm: 6px;
     --border-radius-md: 10px;
     --border-radius-lg: 16px;
-    
+
     /* Effects */
     --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.1);
     --shadow-md: 0 6px 15px rgba(0, 0, 0, 0.15);
     --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.2);
-    
+
     /* Animation */
     --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -79,7 +79,7 @@ body {
     background-color: var(--bg-color);
     color: var(--text-color);
     overflow: hidden;
-    background-image: 
+    background-image:
         radial-gradient(circle at 15% 15%, rgba(139, 92, 246, 0.15) 0%, transparent 25%),
         radial-gradient(circle at 85% 25%, rgba(59, 130, 246, 0.12) 0%, transparent 30%),
         radial-gradient(circle at 50% 80%, rgba(249, 115, 22, 0.1) 0%, transparent 40%);
@@ -121,30 +121,30 @@ header {
     transition: all var(--transition-normal);
 }
 
-.header-left, 
-.header-center, 
+.header-left,
+.header-center,
 .header-right {
     display: flex;
     align-items: center;
 }
 
 .header-left {
-    font-size: 1.5rem;
-    font-weight: 700;
+    font-size: 1.8rem; /* bigger */
+    font-weight: 800;
     cursor: pointer;
     padding: 6px 12px;
     border-radius: var(--border-radius-md);
-    color: var(--text-color);
+    color: #fff; /* white title */
     transition: all var(--transition-normal);
     display: flex;
     align-items: center;
     letter-spacing: -0.5px;
-    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
 }
+
+/* Full minimalist header: hide the brand label when in minimal mode */
+/* Keep brand visible in minimal mode */
+body.minimal .header-left { display: flex; }
 
 .header-left:hover {
     transform: translateY(-1px);
@@ -179,12 +179,14 @@ button {
     -webkit-backdrop-filter: blur(8px);
     box-shadow: var(--shadow-sm);
     font-size: 0.95rem;
-    display: flex;
+    display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
     height: 40px;
     position: relative;
     overflow: hidden;
+    vertical-align: middle;
 }
 
 button:hover {
@@ -343,12 +345,12 @@ button i {
     position: relative;
 }
 
-.pen-size-dropdown, 
+.pen-size-dropdown,
 .eraser-size-dropdown {
     position: absolute;
     top: 100%;
     left: 0;
-    background: var(--bg-color-light);
+    background: var(--glass-bg);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid var(--glass-border);
@@ -369,7 +371,7 @@ button i {
     display: flex;
 }
 
-.pen-size-dropdown::before, 
+.pen-size-dropdown::before,
 .eraser-size-dropdown::before {
     content: '';
     position: absolute;
@@ -379,10 +381,10 @@ button i {
     height: 0;
     border-left: 8px solid transparent;
     border-right: 8px solid transparent;
-    border-bottom: 8px solid var(--bg-color-light);
+    border-bottom: 8px solid var(--glass-bg);
 }
 
-.pen-size-option, 
+.pen-size-option,
 .eraser-size-option {
     padding: 8px 15px;
     cursor: pointer;
@@ -390,14 +392,14 @@ button i {
     border-left: 3px solid transparent;
 }
 
-.pen-size-option:hover, 
+.pen-size-option:hover,
 .eraser-size-option:hover {
     background-color: var(--bg-color-lighter);
     border-left: 3px solid var(--primary-light);
     padding-left: 18px;
 }
 
-.pen-size-option.active, 
+.pen-size-option.active,
 .eraser-size-option.active {
     background-color: rgba(59, 130, 246, 0.2);
     color: var(--primary-light);
@@ -408,7 +410,7 @@ button i {
 /* Tooltip */
 .tooltip {
     position: absolute;
-    background: var(--bg-color);
+    background: var(--glass-bg);
     color: var(--text-color);
     padding: 6px 10px;
     border-radius: var(--border-radius-md);
@@ -437,7 +439,7 @@ button i {
     transform: translateX(-50%);
     border-width: 5px 5px 0;
     border-style: solid;
-    border-color: var(--bg-color) transparent transparent;
+    border-color: var(--glass-bg) transparent transparent;
 }
 
 /* Tool buttons */
@@ -544,9 +546,9 @@ button i {
     height: 100%;
     top: 0;
     left: -100%;
-    background: linear-gradient(90deg, 
-        rgba(255, 255, 255, 0), 
-        rgba(255, 255, 255, 0.2), 
+    background: linear-gradient(90deg,
+        rgba(255, 255, 255, 0),
+        rgba(255, 255, 255, 0.2),
         rgba(255, 255, 255, 0));
     animation: shine 1.5s ease-in-out;
 }
@@ -577,7 +579,7 @@ button i {
 .context-menu {
     position: fixed;
     z-index: 1000;
-    background: var(--bg-color);
+    background: var(--glass-bg);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border-radius: var(--border-radius-md);
@@ -632,7 +634,7 @@ button i {
     width: 400px;
     max-width: 90vw;
     max-height: 80vh;
-    background: var(--bg-color);
+    background: var(--glass-bg);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--glass-border);
@@ -721,7 +723,7 @@ button i {
 }
 
 .toast {
-    background: var(--bg-color);
+    background: var(--glass-bg);
     color: var(--text-color);
     border-radius: var(--border-radius-md);
     padding: 12px 16px;
@@ -750,8 +752,8 @@ button i {
     left: 0;
     height: 2px;
     width: 100%;
-    background: linear-gradient(90deg, 
-        var(--primary-light), 
+    background: linear-gradient(90deg,
+        var(--primary-light),
         var(--secondary-light));
     animation: toast-timer 5s linear forwards;
     transform-origin: left;
@@ -843,23 +845,23 @@ button i {
         flex-direction: column;
         gap: 10px;
     }
-    
+
     .header-left, .header-center, .header-right {
         width: 100%;
         justify-content: center;
         margin-bottom: 5px;
     }
-    
+
     #whiteboard {
         height: calc(100vh - 150px);
         margin-top: 150px;
     }
-    
+
     .toolbox, .color-section {
         width: 100%;
         justify-content: center;
     }
-    
+
     .help-panel {
         width: 90vw;
         max-height: 70vh;
@@ -873,32 +875,32 @@ button i {
         flex-direction: column;
         gap: 8px;
     }
-    
+
     .color-section, .toolbox {
         width: 100%;
     }
-    
+
     #whiteboard {
         height: calc(100vh - 200px);
         margin-top: 200px;
     }
-    
+
     .toast-container {
         left: 10px;
         right: 10px;
         transform: none;
         max-width: none;
     }
-    
+
     .help-panel {
         padding: 15px;
     }
-    
+
     .shortcut-list {
         grid-template-columns: 1fr;
         gap: 12px;
     }
-    
+
     .shortcut-key {
         margin-bottom: 4px;
     }
@@ -926,13 +928,13 @@ button i {
     width: 100%;
     height: 100%;
     background-color: var(--bg-color);
-    background-image: linear-gradient(135deg, 
-        rgba(59, 130, 246, 0.05) 25%, 
-        transparent 25%, 
-        transparent 50%, 
-        rgba(59, 130, 246, 0.05) 50%, 
-        rgba(59, 130, 246, 0.05) 75%, 
-        transparent 75%, 
+    background-image: linear-gradient(135deg,
+        rgba(59, 130, 246, 0.05) 25%,
+        transparent 25%,
+        transparent 50%,
+        rgba(59, 130, 246, 0.05) 50%,
+        rgba(59, 130, 246, 0.05) 75%,
+        transparent 75%,
         transparent);
     background-size: 20px 20px;
     z-index: 1000;
@@ -991,12 +993,12 @@ button i {
     body * {
         visibility: hidden;
     }
-    
+
     #drawing-canvas,
     #drawing-canvas * {
         visibility: visible;
     }
-    
+
     #drawing-canvas {
         position: absolute;
         left: 0;
@@ -1033,6 +1035,113 @@ button i {
     50% { transform: scale(1.05); }
     100% { transform: scale(1); }
 }
+
+
+/* Minimalist theme overrides */
+body.minimal {
+    background-image: none;
+}
+
+body.minimal header {
+    height: 56px;
+    padding: 8px 12px;
+    background: var(--glass-bg);
+    border-bottom: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-sm);
+}
+
+body.minimal .header-left {
+    font-size: 1.4rem; /* slightly bigger in minimal mode too */
+    text-shadow: none;
+    color: #fff;
+}
+
+body.minimal .header-center { gap: 12px; }
+body.minimal .header-right { gap: 8px; }
+
+body.minimal .color-section,
+body.minimal .toolbox {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-sm);
+    padding: 6px 10px;
+}
+
+/* Icon-only controls */
+body.minimal button {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    line-height: 0; /* ensure no extra inline height */
+    font-size: 0; /* hide text labels */
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+body.minimal button i {
+    font-size: 18px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+}
+body.minimal #helpBtn { width: 40px; }
+
+/* Show compact size indicator badges in minimal mode */
+body.minimal .tool-btn { position: relative; }
+body.minimal .tool-btn .size-indicator {
+  display: inline-flex;
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  font-size: 10px;
+  line-height: 1;
+  padding: 1px 3px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: var(--text-color);
+  font-weight: 600;
+  letter-spacing: -0.2px;
+}
+
+/* Tweak color swatches spacing */
+body.minimal .color-buttons { gap: 10px; }
+body.minimal .color-btn { box-shadow: none; border-color: rgba(255,255,255,0.18); }
+body.minimal .color-btn.active { transform: scale(1.1); animation: none; }
+
+/* Reduce chrome on canvas area */
+body.minimal #whiteboard {
+    /* Match canvas fill to ensure eraser reveals same shade */
+    background-color: var(--bg-color-light);
+    box-shadow: none;
+}
+
+/* Subtle hover without lifts */
+body.minimal button:hover {
+    transform: none;
+    background: rgba(255,255,255,0.1);
+}
+
+/* Dropdowns remain usable but cleaner */
+body.minimal .pen-size-dropdown,
+body.minimal .eraser-size-dropdown {
+    background: rgba(15, 23, 42, 0.9);
+    border-color: rgba(255,255,255,0.08);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Toasts quieter */
+body.minimal .toast { border-left-width: 2px; box-shadow: var(--shadow-sm); }
+
+/* Overlay and helpers remain subtle */
+body.minimal .size-visualizer { box-shadow: none; border-width: 1px; }
 
 /* Add elegant hover effect for all clickable elements */
 .tool-btn:hover, .feature-btn:hover {
