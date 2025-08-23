@@ -33,7 +33,7 @@ let currentPath = null;
 let animationFrameRequested = false;
 
 // DOM element cache
-const domElements = {
+let domElements = {
   sizeVisualizer: null,
   contextMenu: null,
   tooltip: null
@@ -157,6 +157,14 @@ function init() {
   }
 }
 
+// Compute a reasonable click vs drag threshold that accounts for zoom and DPI
+function calcClickMoveThreshold() {
+  const dpr = window.devicePixelRatio || 1;
+  // Base 5px at zoom 1 on standard DPI; scale with zoom and dampen by 0.8 to avoid over-inflation
+  const base = 5;
+  return Math.max(3, Math.round(base * zoomLevel * Math.min(dpr, 2) * 0.8));
+}
+
 // Setup all event listeners
 function setupEventListeners() {
   console.log('Setting up event listeners...');
@@ -198,15 +206,6 @@ function setupEventListeners() {
         }
 
         // Reset middle mouse tracking
-
-// Compute a reasonable click vs drag threshold that accounts for zoom and DPI
-function calcClickMoveThreshold() {
-  const dpr = window.devicePixelRatio || 1;
-  // Base 5px at zoom 1 on standard DPI; scale with zoom and dampen by 0.8 to avoid over-inflation
-  const base = 5;
-  return Math.max(3, Math.round(base * zoomLevel * Math.min(dpr, 2) * 0.8));
-}
-
         isMiddleMouseDown = false;
       }
 
@@ -1024,17 +1023,19 @@ function getCoordinates(e) {
 // Save the current state for undo/redo
 function saveState() {
   try {
-    // Limit undo stack size to prevent memory issues
-    if (undoStack.length >= UNDO_STACK_LIMIT) {
-      undoStack.shift(); // Remove oldest state
-    }
-
     // Use PNG format to preserve transparency for eraser
     const dataUrl = canvas.toDataURL('image/png');
 
     // Save current state and clear redo stack
     undoStack.push(dataUrl);
     redoStack = [];
+
+    // Limit undo stack size to prevent memory issues
+    if (undoStack.length > UNDO_STACK_LIMIT) {
+      // Remove the oldest states to keep within limit
+      const excess = undoStack.length - UNDO_STACK_LIMIT;
+      undoStack.splice(0, excess);
+    }
 
     // Update UI elements
     updateUndoRedoButtons();
@@ -1540,6 +1541,7 @@ function updateToolButtonsText() {
   // Reflect active sizes in dropdowns
   setActivePenSizeOption(penSize);
   setActiveEraserSizeOption(eraserSize);
+}
 
 // Highlight active pen size option
 function setActivePenSizeOption(size) {
@@ -1570,8 +1572,6 @@ function showSizeChangeHint(tool) {
     showSizeVisualizer(x - rect.left, y - rect.top, size);
     setTimeout(() => hideSizeVisualizer(), 700);
   } catch (_) {}
-}
-
 }
 
 // Handle escape key
@@ -2112,5 +2112,148 @@ addEventListenerToElement(document.getElementById('undoBtn'), 'click', undo);
 addEventListenerToElement(document.getElementById('redoBtn'), 'click', redo);
 addEventListenerToElement(document.getElementById('clearBtn'), 'click', clearCanvas);
 addEventListenerToElement(document.getElementById('exportBtn'), 'click', exportCanvas);
+
+// Export functions for testing (only in Node.js environment)
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    // Core functions
+    init,
+    debounce,
+    throttle,
+    createTooltip,
+    resizeCanvas,
+    getCoordinates,
+    applyTransform,
+    updateCursor,
+    
+    // Drawing functions
+    startDrawing,
+    stopDrawing,
+    draw,
+    drawDot,
+    drawPenPath,
+    drawEraserPath,
+    
+    // State management
+    saveState,
+    loadState,
+    undo,
+    redo,
+    trimUndoRedoStacks,
+    updateUndoRedoButtons,
+    cleanupMemory,
+    
+    // UI functions
+    setupColorButtons,
+    setupToolButtons,
+    setupHelpPanel,
+    setupContextMenu,
+    setTool,
+    clearCanvas,
+    exportCanvas,
+    showToast,
+    showContextMenu,
+    hideContextMenu,
+    toggleHelpPanel,
+    closeHelpPanel,
+    showSizeVisualizer,
+    hideSizeVisualizer,
+    updateToolButtonsText,
+    setActivePenSizeOption,
+    setActiveEraserSizeOption,
+    
+    // Input handling
+    handleMouseDown,
+    handleMouseUp,
+    handleMouseMove,
+    handleMouseOut,
+    handleTouchStart,
+    handleTouchMove,
+    handleTouchEnd,
+    handleKeyDown,
+    handleKeyUp,
+    handleWheel,
+    handleDocumentClick,
+    handleEscapeKey,
+    handleContextMenu,
+    handleVisibilityChange,
+    
+    // Pan and zoom
+    startCanvasPan,
+    moveCanvasPan,
+    stopCanvasPan,
+    calcClickMoveThreshold,
+    
+    // Canvas operations
+    renderFrame,
+    copySelection,
+    cutSelection,
+    pasteSelection,
+    
+    // Event setup
+    setupEventListeners,
+    setupUI,
+    setupUndoRedoButtons,
+    
+    // Mouse movement optimization
+    optimizedMouseMove,
+    
+    // Global state variables for testing
+    get canvas() { return canvas; },
+    set canvas(value) { canvas = value; },
+    get ctx() { return ctx; },
+    set ctx(value) { ctx = value; },
+    get isDrawing() { return isDrawing; },
+    set isDrawing(value) { isDrawing = value; },
+    get isPanning() { return isPanning; },
+    set isPanning(value) { isPanning = value; },
+    get isMiddleMouseDown() { return isMiddleMouseDown; },
+    set isMiddleMouseDown(value) { isMiddleMouseDown = value; },
+    get currentColor() { return currentColor; },
+    set currentColor(value) { currentColor = value; },
+    get currentTool() { return currentTool; },
+    set currentTool(value) { currentTool = value; },
+    get penSize() { return penSize; },
+    set penSize(value) { penSize = value; },
+    get eraserSize() { return eraserSize; },
+    set eraserSize(value) { eraserSize = value; },
+    get undoStack() { return undoStack; },
+    set undoStack(value) { undoStack = value; },
+    get redoStack() { return redoStack; },
+    set redoStack(value) { redoStack = value; },
+    get zoomLevel() { return zoomLevel; },
+    set zoomLevel(value) { zoomLevel = value; },
+    get panOffsetX() { return panOffsetX; },
+    set panOffsetX(value) { panOffsetX = value; },
+    get panOffsetY() { return panOffsetY; },
+    set panOffsetY(value) { panOffsetY = value; },
+    get lastMouseX() { return lastMouseX; },
+    set lastMouseX(value) { lastMouseX = value; },
+    get lastMouseY() { return lastMouseY; },
+    set lastMouseY(value) { lastMouseY = value; },
+    get currentPath() { return currentPath; },
+    set currentPath(value) { currentPath = value; },
+    get drawingPaths() { return drawingPaths; },
+    set drawingPaths(value) { drawingPaths = value; },
+    get appInitialized() { return appInitialized; },
+    set appInitialized(value) { appInitialized = value; },
+    get showRulers() { return showRulers; },
+    set showRulers(value) { showRulers = value; },
+    get sizeVisualizer() { return sizeVisualizer; },
+    set sizeVisualizer(value) { sizeVisualizer = value; },
+    get contextMenu() { return contextMenu; },
+    set contextMenu(value) { contextMenu = value; },
+    get copiedRegion() { return copiedRegion; },
+    set copiedRegion(value) { copiedRegion = value; },
+    get middleMouseStartX() { return middleMouseStartX; },
+    set middleMouseStartX(value) { middleMouseStartX = value; },
+    get middleMouseStartY() { return middleMouseStartY; },
+    set middleMouseStartY(value) { middleMouseStartY = value; },
+    get lastPanPoint() { return lastPanPoint; },
+    set lastPanPoint(value) { lastPanPoint = value; },
+    get domElements() { return domElements; },
+    set domElements(value) { domElements = value; }
+  };
+}
 
 
