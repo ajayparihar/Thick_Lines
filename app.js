@@ -54,6 +54,36 @@ let appInitialized = false;
 // Global variable to control ruler visibility
 let showRulers = false;
 
+// Performance monitoring
+let frameCount = 0;
+let lastFpsTime = performance.now();
+let currentFps = 60;
+let fpsDisplay = null;
+
+// Keyboard navigation state
+let keyboardCursorX = 0;
+let keyboardCursorY = 0;
+let keyboardNavigationEnabled = false;
+
+// High contrast mode
+let highContrastMode = false;
+
+// Dirty region tracking for performance
+let dirtyRegions = [];
+let offscreenCanvas = null;
+let offscreenCtx = null;
+
+// Touch and pointer event state
+let touchStartTime = 0;
+let lastTouchDistance = 0;
+let touchZoomCenter = { x: 0, y: 0 };
+let activePointers = new Map();
+let touchIdentifiers = [];
+let lastTouchPanPoint = null;
+let touchPanThreshold = 10; // px
+let supportsPointerEvents = 'PointerEvent' in window;
+let supportsTouchEvents = 'TouchEvent' in window;
+
 // Debounce function for performance optimization
 function debounce(func, wait) {
   let timeout;
@@ -1256,10 +1286,11 @@ function exportCanvas() {
         // Draw the image from the undoStack
         tempCtx.drawImage(img, 0, 0);
 
-        // Add timestamp to filename
+        // Add timestamp to filename and sanitize it
         const now = new Date();
         const timestamp = now.toISOString().replace(/[:.]/g, '-').replace('T', '_').substring(0, 19);
-        const filename = `thick-lines-drawing_${timestamp}.png`;
+        const rawFilename = `thick-lines-drawing_${timestamp}.png`;
+        const filename = sanitizeFilename(rawFilename);
 
         // Create a temporary link element
         const link = document.createElement('a');
@@ -1731,6 +1762,12 @@ function handleKeyDown(e) {
   // Avoid handling keydown events in input fields
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
+  // Check for keyboard navigation first
+  if (handleKeyboardNavigation(e)) {
+    e.preventDefault();
+    return;
+  }
+
   const key = e.key.toLowerCase();
 
   // Switch statements are faster than multiple if/else in most browsers
@@ -1748,10 +1785,14 @@ function handleKeyDown(e) {
       }
       break;
     case 'p':
-      setTool('pen');
+      if (!e.ctrlKey) {
+        setTool('pen');
+      }
       break;
     case 'e':
-      setTool('eraser');
+      if (!e.ctrlKey) {
+        setTool('eraser');
+      }
       break;
     case 's':
       if (e.ctrlKey) {
@@ -1771,15 +1812,56 @@ function handleKeyDown(e) {
     case '?':
       toggleHelpPanel();
       break;
+    case 'h':
+      if (e.ctrlKey) {
+        e.preventDefault();
+        toggleHighContrastMode();
+      }
+      break;
+    case 'k':
+      if (e.ctrlKey) {
+        e.preventDefault();
+        toggleKeyboardNavigation();
+      }
+      break;
+    case 'f':
+      if (e.ctrlKey && e.shiftKey) {
+        e.preventDefault();
+        toggleFPSDisplay();
+      }
+      break;
     case '1':
     case '2':
     case '3':
     case '4':
-      // Select color based on number key
-      const colorButtons = document.querySelectorAll('.color-btn');
-      const index = parseInt(key) - 1;
-      if (colorButtons[index]) {
-        colorButtons[index].click();
+      if (!keyboardNavigationEnabled) {
+        // Select color based on number key
+        const colorButtons = document.querySelectorAll('.color-btn');
+        const index = parseInt(key) - 1;
+        if (colorButtons[index]) {
+          colorButtons[index].click();
+        }
+      }
+      break;
+    case '6':
+    case '7':
+    case '8':
+    case '9':
+    case '0':
+      // Brush size shortcuts (6=2px, 7=5px, 8=10px, 9=20px, 0=30px)
+      const sizeMap = { '6': 2, '7': 5, '8': 10, '9': 20, '0': 30 };
+      const size = sizeMap[key];
+      if (size) {
+        if (currentTool === 'pen') {
+          penSize = size;
+          updateToolButtonsText();
+          showSizeChangeHint('pen');
+        } else if (currentTool === 'eraser') {
+          eraserSize = size;
+          updateToolButtonsText();
+          showSizeChangeHint('eraser');
+        }
+        showToast(`${currentTool === 'pen' ? 'Pen' : 'Eraser'} size: ${size}px`, 'info');
       }
       break;
   }
@@ -2015,6 +2097,18 @@ function setupUI() {
   setupUndoRedoButtons();
   setupHelpPanel();
   setupContextMenu();
+  
+  // Initialize accessibility features
+  initHighContrastMode();
+  
+  // Set up performance monitoring
+  if (window.requestAnimationFrame) {
+    const performanceLoop = () => {
+      updateFPS();
+      requestAnimationFrame(performanceLoop);
+    };
+    requestAnimationFrame(performanceLoop);
+  }
 
   // Show welcome toast
   showToast('Welcome to Thick Lines!', 'info');
@@ -2095,6 +2189,72 @@ function cleanupMemory() {
   console.log('Deep memory cleanup performed');
 }
 
+// Security utility functions
+
+// Sanitize HTML content to prevent XSS
+function sanitizeHTML(input) {
+  const element = document.createElement('div');
+  element.textContent = input;
+  return element.innerHTML;
+}
+
+// Validate color inputs to ensure they're proper hex codes or named colors
+function validateColor(color) {
+  // Allow standard CSS color names
+  const namedColors = ['black', 'white', 'red', 'green', 'blue', 'yellow', 'orange', 'purple', 'pink', 'brown', 'gray', 'cyan', 'magenta'];
+  if (namedColors.includes(color.toLowerCase())) {
+    return color.toLowerCase();
+  }
+  
+  // Check if it's a valid hex color
+  const hexRegex = /^#([0-9A-F]{3}){1,2}$/i;
+  if (hexRegex.test(color)) {
+    return color;
+  }
+  
+  // Check if it's a valid rgb/rgba color
+  const rgbRegex = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\s*\)$/i;
+  if (rgbRegex.test(color)) {
+    return color;
+  }
+  
+  // Default to a safe color if validation fails
+  console.warn(`Invalid color detected: ${color}, defaulting to fallback color`);
+  return DEFAULT_COLOR;
+}
+
+// Validate numeric inputs to ensure they're within acceptable ranges
+function validateNumericInput(value, min, max, defaultValue) {
+  const num = parseFloat(value);
+  if (isNaN(num) || num < min || num > max) {
+    console.warn(`Invalid numeric input: ${value}, defaulting to ${defaultValue}`);
+    return defaultValue;
+  }
+  return num;
+}
+
+// Sanitize filename for export
+function sanitizeFilename(filename) {
+  // Remove any path traversal characters and invalid filename characters
+  return filename.replace(/[/\\?%*:|"<>]/g, '-')
+                .replace(/\.\.+/g, '-') // Prevent path traversal attempts
+                .substring(0, 255); // Limit length
+}
+
+// Validate URL to prevent potential security issues
+function validateURL(url) {
+  try {
+    const parsedUrl = new URL(url);
+    // Only allow http and https protocols
+    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+      return false;
+    }
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 // Add a cleanup method when the app is closed or tab is changed
 window.addEventListener('beforeunload', cleanupMemory);
 
@@ -2112,6 +2272,197 @@ addEventListenerToElement(document.getElementById('undoBtn'), 'click', undo);
 addEventListenerToElement(document.getElementById('redoBtn'), 'click', redo);
 addEventListenerToElement(document.getElementById('clearBtn'), 'click', clearCanvas);
 addEventListenerToElement(document.getElementById('exportBtn'), 'click', exportCanvas);
+addEventListenerToElement(document.getElementById('contrastBtn'), 'click', toggleHighContrastMode);
+
+// Toggle high contrast mode
+function toggleHighContrastMode() {
+  highContrastMode = !highContrastMode;
+  document.body.classList.toggle('high-contrast', highContrastMode);
+  
+  // Update button state
+  const contrastBtn = document.getElementById('contrastBtn');
+  if (contrastBtn) {
+    contrastBtn.classList.toggle('active', highContrastMode);
+    contrastBtn.title = highContrastMode ? 'Disable High Contrast Mode' : 'Enable High Contrast Mode';
+    contrastBtn.setAttribute('aria-pressed', highContrastMode.toString());
+  }
+  
+  // Store preference
+  localStorage.setItem('thick-lines-high-contrast', highContrastMode.toString());
+  
+  showToast(`High contrast mode ${highContrastMode ? 'enabled' : 'disabled'}`, 'info');
+}
+
+// Initialize high contrast mode from saved preference
+function initHighContrastMode() {
+  const saved = localStorage.getItem('thick-lines-high-contrast');
+  if (saved === 'true') {
+    toggleHighContrastMode();
+  }
+}
+
+// Performance monitoring functions
+function updateFPS() {
+  frameCount++;
+  const now = performance.now();
+  
+  if (now - lastFpsTime >= 1000) {
+    currentFps = Math.round((frameCount * 1000) / (now - lastFpsTime));
+    frameCount = 0;
+    lastFpsTime = now;
+    
+    if (fpsDisplay) {
+      fpsDisplay.textContent = `FPS: ${currentFps}`;
+    }
+  }
+}
+
+// Create FPS display element
+function createFPSDisplay() {
+  fpsDisplay = document.createElement('div');
+  fpsDisplay.style.position = 'fixed';
+  fpsDisplay.style.top = '10px';
+  fpsDisplay.style.left = '10px';
+  fpsDisplay.style.backgroundColor = 'rgba(0,0,0,0.7)';
+  fpsDisplay.style.color = 'white';
+  fpsDisplay.style.padding = '5px 10px';
+  fpsDisplay.style.borderRadius = '5px';
+  fpsDisplay.style.fontSize = '12px';
+  fpsDisplay.style.fontFamily = 'monospace';
+  fpsDisplay.style.zIndex = '10000';
+  fpsDisplay.style.display = 'none';
+  fpsDisplay.textContent = 'FPS: 60';
+  document.body.appendChild(fpsDisplay);
+}
+
+// Toggle FPS display
+function toggleFPSDisplay() {
+  if (!fpsDisplay) createFPSDisplay();
+  
+  const isVisible = fpsDisplay.style.display !== 'none';
+  fpsDisplay.style.display = isVisible ? 'none' : 'block';
+  
+  showToast(`FPS display ${!isVisible ? 'enabled' : 'disabled'}`, 'info');
+}
+
+// Keyboard navigation functions
+function enableKeyboardNavigation() {
+  keyboardNavigationEnabled = true;
+  
+  // Initialize cursor position at center
+  const rect = canvas.getBoundingClientRect();
+  keyboardCursorX = rect.width / 2;
+  keyboardCursorY = rect.height / 2;
+  
+  updateKeyboardCursor();
+  showToast('Keyboard navigation enabled. Use arrow keys to move, Enter to draw', 'info');
+}
+
+function disableKeyboardNavigation() {
+  keyboardNavigationEnabled = false;
+  hideKeyboardCursor();
+  showToast('Keyboard navigation disabled', 'info');
+}
+
+function toggleKeyboardNavigation() {
+  if (keyboardNavigationEnabled) {
+    disableKeyboardNavigation();
+  } else {
+    enableKeyboardNavigation();
+  }
+}
+
+// Create and update keyboard cursor
+function updateKeyboardCursor() {
+  if (!keyboardNavigationEnabled) return;
+  
+  let cursor = document.getElementById('keyboard-cursor');
+  if (!cursor) {
+    cursor = document.createElement('div');
+    cursor.id = 'keyboard-cursor';
+    cursor.style.position = 'fixed';
+    cursor.style.width = '20px';
+    cursor.style.height = '20px';
+    cursor.style.border = '2px solid #fff';
+    cursor.style.borderRadius = '50%';
+    cursor.style.pointerEvents = 'none';
+    cursor.style.zIndex = '1000';
+    cursor.style.backgroundColor = 'rgba(255,255,255,0.2)';
+    cursor.style.transform = 'translate(-50%, -50%)';
+    document.body.appendChild(cursor);
+  }
+  
+  const rect = canvas.getBoundingClientRect();
+  cursor.style.left = `${rect.left + keyboardCursorX}px`;
+  cursor.style.top = `${rect.top + keyboardCursorY}px`;
+}
+
+function hideKeyboardCursor() {
+  const cursor = document.getElementById('keyboard-cursor');
+  if (cursor) {
+    cursor.remove();
+  }
+}
+
+// Handle keyboard navigation and additional shortcuts
+function handleKeyboardNavigation(e) {
+  if (!keyboardNavigationEnabled) return false;
+  
+  const step = 10; // pixels to move
+  let moved = false;
+  
+  switch (e.key) {
+    case 'ArrowUp':
+      keyboardCursorY = Math.max(0, keyboardCursorY - step);
+      moved = true;
+      break;
+    case 'ArrowDown':
+      keyboardCursorY = Math.min(canvas.clientHeight, keyboardCursorY + step);
+      moved = true;
+      break;
+    case 'ArrowLeft':
+      keyboardCursorX = Math.max(0, keyboardCursorX - step);
+      moved = true;
+      break;
+    case 'ArrowRight':
+      keyboardCursorX = Math.min(canvas.clientWidth, keyboardCursorX + step);
+      moved = true;
+      break;
+    case 'Enter':
+      // Draw a dot at cursor position
+      const rect = canvas.getBoundingClientRect();
+      const syntheticEvent = {
+        clientX: rect.left + keyboardCursorX,
+        clientY: rect.top + keyboardCursorY,
+        preventDefault: () => {}
+      };
+      
+      startDrawing(syntheticEvent);
+      setTimeout(() => stopDrawing(), 100); // Brief draw
+      return true;
+    case '5': // Number pad 5 or regular 5
+      // Center position
+      keyboardCursorX = canvas.clientWidth / 2;
+      keyboardCursorY = canvas.clientHeight / 2;
+      moved = true;
+      break;
+  }
+  
+  if (moved) {
+    updateKeyboardCursor();
+    return true;
+  }
+  
+  return false;
+}
+
+// Switch to integer coordinates for performance
+function normalizeCoordinates(x, y) {
+  return {
+    x: Math.round(x),
+    y: Math.round(y)
+  };
+}
 
 // Export functions for testing (only in Node.js environment)
 if (typeof module !== 'undefined' && module.exports) {

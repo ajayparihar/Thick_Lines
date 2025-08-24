@@ -59,6 +59,13 @@
     --transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     --hover-lift: translateY(-2px);
     --active-scale: scale(0.98);
+    
+    /* High contrast mode variables */
+    --hc-bg-color: #000000;
+    --hc-text-color: #ffffff;
+    --hc-border-color: #ffffff;
+    --hc-button-bg: #1a1a1a;
+    --hc-button-hover: #333333;
 }
 
 /* Reset and base styles */
@@ -1147,4 +1154,75 @@ body.minimal .size-visualizer { box-shadow: none; border-width: 1px; }
 .tool-btn:hover, .feature-btn:hover {
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.15);
     transform: translateY(-2px);
+}
+
+/* High contrast mode support */
+body.high-contrast {
+    --bg-color: var(--hc-bg-color);
+    --bg-color-light: var(--hc-bg-color);
+    --bg-color-lighter: #333333;
+    --text-color: var(--hc-text-color);
+    --text-muted: #cccccc;
+    --border-color: var(--hc-border-color);
+    --glass-bg: var(--hc-button-bg);
+    --glass-border: var(--hc-border-color);
+    --button-bg: var(--hc-button-bg);
+    --button-hover: var(--hc-button-hover);
+    background-image: none;
+    background-color: var(--hc-bg-color);
+}
+
+body.high-contrast header {
+    background: var(--hc-button-bg);
+    border-bottom: 2px solid var(--hc-border-color);
+}
+
+body.high-contrast button {
+    border: 2px solid var(--hc-border-color);
+    background: var(--hc-button-bg);
+    color: var(--hc-text-color);
+}
+
+body.high-contrast button:hover {
+    background: var(--hc-button-hover);
+    border-color: var(--hc-text-color);
+}
+
+body.high-contrast .color-btn {
+    border: 3px solid var(--hc-border-color);
+}
+
+body.high-contrast .color-btn.active {
+    border: 4px solid var(--hc-text-color);
+    box-shadow: 0 0 0 2px var(--hc-border-color);
+}
+
+body.high-contrast .help-panel,
+body.high-contrast .context-menu,
+body.high-contrast .toast,
+body.high-contrast .pen-size-dropdown,
+body.high-contrast .eraser-size-dropdown {
+    background: var(--hc-button-bg);
+    border: 2px solid var(--hc-border-color);
+    color: var(--hc-text-color);
+}
+
+body.high-contrast #drawing-canvas {
+    border: 2px solid var(--hc-border-color);
+}
+
+/* Browser specific high contrast support */
+@media (prefers-contrast: high) {
+    body {
+        --bg-color: #000000;
+        --bg-color-light: #000000;
+        --text-color: #ffffff;
+        --border-color: #ffffff;
+        background-image: none;
+    }
+    
+    button, .color-btn {
+        border-width: 2px;
+        border-style: solid;
+    }
 }

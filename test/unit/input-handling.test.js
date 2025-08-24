@@ -663,4 +663,52 @@ describe('Input Handling (unit)', () => {
       expect(document.hidden).toBe(false);
     });
   });
+
+  describe('Context Menu and Dropdown Handling', () => {
+    beforeEach(() => {
+      // Mock necessary elements
+      global.contextMenu = {
+        classList: { add: jest.fn(), remove: jest.fn() },
+        style: {}
+      };
+      document.getElementById = jest.fn(id => {
+        if (id === 'contextMenu') return global.contextMenu;
+        return {
+          classList: { add: jest.fn(), remove: jest.fn(), toggle: jest.fn() },
+          style: {}
+        };
+      });
+      document.querySelectorAll = jest.fn(() => [
+        { classList: { remove: jest.fn() } },
+        { classList: { remove: jest.fn() } }
+      ]);
+    });
+
+    test('should close dropdowns on document click', () => {
+      const mockEvent = { target: document.createElement('div') };
+      handleDocumentClick(mockEvent);
+      document.querySelectorAll('.pen-size-dropdown, .eraser-size-dropdown').forEach(dropdown => {
+        expect(dropdown.classList.remove).toHaveBeenCalledWith('show');
+      });
+    });
+
+    test('should hide context menu on document click', () => {
+      const mockEvent = { target: document.createElement('div') };
+      handleDocumentClick(mockEvent);
+      expect(global.contextMenu.classList.remove).toHaveBeenCalledWith('visible');
+    });
+
+    test('should handle escape key to close UI elements', () => {
+      const helpPanel = { classList: { contains: () => true, toggle: jest.fn() } };
+      document.getElementById = jest.fn(id => {
+        if (id === 'helpPanel') return helpPanel;
+        return { classList: { remove: jest.fn() } };
+      });
+      handleEscapeKey();
+      document.querySelectorAll('.pen-size-dropdown, .eraser-size-dropdown').forEach(dropdown => {
+        expect(dropdown.classList.remove).toHaveBeenCalledWith('show');
+      });
+      expect(helpPanel.classList.toggle).toHaveBeenCalled();
+    });
+  });
 });

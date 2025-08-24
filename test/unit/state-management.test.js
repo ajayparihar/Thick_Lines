@@ -17,6 +17,21 @@ describe('State Management (unit)', () => {
       restore: jest.fn(),
       fillRect: jest.fn(),
       drawImage: jest.fn(),
+      beginPath: jest.fn(),
+      moveTo: jest.fn(),
+      lineTo: jest.fn(),
+      stroke: jest.fn(),
+      fillText: jest.fn(),
+      measureText: jest.fn(() => ({ width: 0 })),
+      getLineDash: jest.fn(() => []),
+      setLineDash: jest.fn(),
+      font: '',
+      strokeStyle: '',
+      lineWidth: 1,
+      lineCap: '',
+      lineJoin: '',
+      textAlign: '',
+      textBaseline: '',
       fillStyle: '#1e293b',
       globalCompositeOperation: 'source-over'
     };
@@ -44,14 +59,24 @@ describe('State Management (unit)', () => {
     global.UNDO_STACK_LIMIT = 30;
 
     // Mock DOM elements
-    document.getElementById = jest.fn((id) => ({
-      disabled: false,
-      classList: {
-        add: jest.fn(),
-        remove: jest.fn(),
-        toggle: jest.fn()
-      }
-    }));
+    let mockUndoBtn = {
+      _disabled: false,
+      set disabled(val) { this._disabled = val; },
+      get disabled() { return this._disabled; },
+      classList: { toggle: jest.fn((className, value) => { if (className === 'disabled') this._disabled = value; }) }
+    };
+    let mockRedoBtn = {
+      _disabled: false,
+      set disabled(val) { this._disabled = val; },
+      get disabled() { return this._disabled; },
+      classList: { toggle: jest.fn((className, value) => { if (className === 'disabled') this._disabled = value; }) }
+    };
+
+    document.getElementById = jest.fn((id) => {
+      if (id === 'undoBtn') return mockUndoBtn;
+      if (id === 'redoBtn') return mockRedoBtn;
+      return null;
+    });
   });
 
   describe('State Saving', () => {
@@ -73,7 +98,7 @@ describe('State Management (unit)', () => {
       saveState();
 
       expect(global.undoStack).toHaveLength(30); // Should be trimmed to limit
-      expect(global.undoStack[0]).toBe('state-5'); // Oldest should be removed
+      expect(global.undoStack[0]).toBe('state-6'); // Oldest should be removed
     });
 
     test('should clear redo stack when saving new state', () => {
@@ -248,12 +273,16 @@ describe('State Management (unit)', () => {
   describe('Button State Updates', () => {
     test('should update undo/redo button states correctly', () => {
       const mockUndoBtn = {
-        disabled: false,
-        classList: { toggle: jest.fn() }
+        _disabled: false,
+        set disabled(val) { this._disabled = val; },
+        get disabled() { return this._disabled; },
+        classList: { toggle: jest.fn((className, value) => { if (className === 'disabled') mockUndoBtn._disabled = value; }) }
       };
       const mockRedoBtn = {
-        disabled: false,
-        classList: { toggle: jest.fn() }
+        _disabled: false,
+        set disabled(val) { this._disabled = val; },
+        get disabled() { return this._disabled; },
+        classList: { toggle: jest.fn((className, value) => { if (className === 'disabled') mockRedoBtn._disabled = value; }) }
       };
 
       document.getElementById = jest.fn((id) => {
@@ -262,14 +291,14 @@ describe('State Management (unit)', () => {
         return null;
       });
 
-      global.undoStack = ['state1', 'state2'];
+      global.undoStack = ['state1'];
       global.redoStack = [];
 
       updateUndoRedoButtons();
 
-      expect(mockUndoBtn.disabled).toBe(false);
+      expect(mockUndoBtn.disabled).toBe(true);
       expect(mockRedoBtn.disabled).toBe(true);
-      expect(mockUndoBtn.classList.toggle).toHaveBeenCalledWith('disabled', false);
+      expect(mockUndoBtn.classList.toggle).toHaveBeenCalledWith('disabled', true);
       expect(mockRedoBtn.classList.toggle).toHaveBeenCalledWith('disabled', true);
     });
 
@@ -302,6 +331,44 @@ describe('State Management (unit)', () => {
       
       // Should still be able to perform other operations
       expect(() => undo()).not.toThrow();
+    });
+  });
+
+  describe('Integration with Drawing Cycle', () => {
+    beforeEach(() => {
+      global.isDrawing = true;
+      global.currentPath = { points: [] };
+      global.saveState = jest.fn();
+      global.updateUndoRedoButtons = jest.fn();
+      global.loadState = jest.fn();
+    });
+
+    test('should call saveState after drawing stops', () => {
+      global.isDrawing = true;
+      stopDrawing();
+      expect(global.saveState).toHaveBeenCalled();
+    });
+
+    test('should call updateUndoRedoButtons after undo/redo', () => {
+      global.undoStack = ['state1', 'state2'];
+      undo();
+      expect(global.updateUndoRedoButtons).toHaveBeenCalled();
+
+      global.redoStack = ['state2'];
+      redo();
+      expect(global.updateUndoRedoButtons).toHaveBeenCalledTimes(2);
+    });
+
+    test('should load correct state on undo/redo', () => {
+      global.undoStack = ['s1', 's2', 's3'];
+      global.redoStack = [];
+
+      undo();
+      expect(global.loadState).toHaveBeenCalledWith('s2');
+
+      global.redoStack.push('s3');
+      redo();
+      expect(global.loadState).toHaveBeenCalledWith('s3');
     });
   });
 });

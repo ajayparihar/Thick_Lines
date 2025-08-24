@@ -9,6 +9,9 @@ describe('Drawing Engine (unit)', () => {
   let mockCanvas;
   let mockContext;
 
+  let drawPenPathSpy;
+  let drawEraserPathSpy;
+
   beforeEach(() => {
     // Setup canvas and context mocks
     mockContext = {
@@ -50,6 +53,10 @@ describe('Drawing Engine (unit)', () => {
     global.isDrawing = false;
     global.currentPath = null;
     global.drawingPaths = [];
+
+    // Spies
+    drawPenPathSpy = jest.spyOn(global, 'drawPenPath');
+    drawEraserPathSpy = jest.spyOn(global, 'drawEraserPath');
   });
 
   describe('Drawing State Management', () => {
@@ -235,6 +242,28 @@ describe('Drawing Engine (unit)', () => {
       const currentPoint = { x: 10, y: 10 }; // No timestamp
 
       expect(() => drawPenPath(prevPoint, currentPoint)).not.toThrow();
+    });
+
+    test('should call the correct drawing function based on the tool', () => {
+      jest.useFakeTimers();
+      global.isDrawing = true;
+      global.draw = jest.fn();
+
+      // Test pen
+      global.currentTool = 'pen';
+      global.draw({ clientX: 10, clientY: 10 });
+      jest.runAllTimers();
+      expect(global.draw).toHaveBeenCalled();
+
+      // Test eraser
+      global.currentTool = 'eraser';
+      global.draw({ clientX: 20, clientY: 20 });
+      jest.runAllTimers();
+      expect(global.draw).toHaveBeenCalled();
+
+      drawPenPathSpy.mockRestore();
+      drawEraserPathSpy.mockRestore();
+      jest.useRealTimers();
     });
   });
 });

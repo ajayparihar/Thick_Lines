@@ -88,7 +88,7 @@ mockCanvas.height = 600;
 Object.defineProperty(document, 'getElementById', {
   value: jest.fn((id) => {
     if (id === 'drawing-canvas') return mockCanvas;
-    return {
+    const mockElement = {
       addEventListener: jest.fn(),
       removeEventListener: jest.fn(),
       click: jest.fn(),
@@ -96,18 +96,32 @@ Object.defineProperty(document, 'getElementById', {
       classList: {
         add: jest.fn(),
         remove: jest.fn(),
-        toggle: jest.fn(),
-        contains: jest.fn()
+        toggle: jest.fn((className, force) => {
+          if (force !== undefined) {
+            if (force) {
+              mockElement.classList.add(className);
+            } else {
+              mockElement.classList.remove(className);
+            }
+          }
+        }),
+        contains: jest.fn(() => false)
       },
       dataset: {},
-      innerHTML: '',
-      textContent: '',
+      _innerHTML: '',
+      _textContent: '',
       disabled: false,
       setAttribute: jest.fn(),
       getAttribute: jest.fn(),
       clientWidth: 800,
-      clientHeight: 600
+      clientHeight: 600,
+      // Use getters/setters to track property assignments
+      get innerHTML() { return this._innerHTML; },
+      set innerHTML(value) { this._innerHTML = value; },
+      get textContent() { return this._textContent; },
+      set textContent(value) { this._textContent = value; }
     };
+    return mockElement;
   })
 });
 
@@ -173,11 +187,11 @@ Object.defineProperty(document, 'querySelectorAll', {
       return [
         {
           dataset: { size: '10' },
-          classList: { toggle: jest.fn() }
+          classList: { toggle: jest.fn(), remove: jest.fn(), add: jest.fn(), contains: jest.fn() }
         },
         {
           dataset: { size: '20' },
-          classList: { toggle: jest.fn() }
+          classList: { toggle: jest.fn(), remove: jest.fn(), add: jest.fn(), contains: jest.fn() }
         }
       ];
     }
@@ -185,11 +199,22 @@ Object.defineProperty(document, 'querySelectorAll', {
       return [
         {
           dataset: { size: '10' },
-          classList: { toggle: jest.fn() }
+          classList: { toggle: jest.fn(), remove: jest.fn(), add: jest.fn(), contains: jest.fn() }
         },
         {
           dataset: { size: '30' },
-          classList: { toggle: jest.fn() }
+          classList: { toggle: jest.fn(), remove: jest.fn(), add: jest.fn(), contains: jest.fn() }
+        }
+      ];
+    }
+    // Handle dropdown selectors
+    if (selector.includes('.pen-size-dropdown') || selector.includes('.eraser-size-dropdown')) {
+      return [
+        {
+          classList: { remove: jest.fn(), add: jest.fn(), toggle: jest.fn(), contains: jest.fn() }
+        },
+        {
+          classList: { remove: jest.fn(), add: jest.fn(), toggle: jest.fn(), contains: jest.fn() }
         }
       ];
     }
@@ -227,16 +252,25 @@ Object.defineProperty(window, 'performance', {
   writable: true
 });
 
-// Mock clipboard API
-Object.defineProperty(navigator, 'clipboard', {
-  value: {
-    write: jest.fn(() => Promise.resolve()),
-    read: jest.fn(() => Promise.resolve([])),
-    writeText: jest.fn(() => Promise.resolve()),
-    readText: jest.fn(() => Promise.resolve(''))
-  },
-  writable: true
-});
+// Mock clipboard API - only define if not already defined
+if (!navigator.clipboard) {
+  Object.defineProperty(navigator, 'clipboard', {
+    value: {
+      write: jest.fn(() => Promise.resolve()),
+      read: jest.fn(() => Promise.resolve([])),
+      writeText: jest.fn(() => Promise.resolve()),
+      readText: jest.fn(() => Promise.resolve(''))
+    },
+    writable: true,
+    configurable: true
+  });
+} else {
+  // Update existing clipboard mock
+  navigator.clipboard.write = jest.fn(() => Promise.resolve());
+  navigator.clipboard.read = jest.fn(() => Promise.resolve([]));
+  navigator.clipboard.writeText = jest.fn(() => Promise.resolve());
+  navigator.clipboard.readText = jest.fn(() => Promise.resolve(''));
+}
 
 // Mock ClipboardItem
 global.ClipboardItem = jest.fn().mockImplementation((data) => ({ data }));
@@ -301,37 +335,68 @@ Object.defineProperty(document.body, 'style', {
   writable: true
 });
 
-// Mock createElement
+// Mock createElement with all necessary DOM methods
 Object.defineProperty(document, 'createElement', {
-  value: jest.fn((tag) => ({
-    tagName: tag.toUpperCase(),
-    className: '',
-    style: {},
-    innerHTML: '',
-    textContent: '',
-    onclick: null,
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    click: jest.fn(),
-    appendChild: jest.fn(),
-    removeChild: jest.fn(),
-    setAttribute: jest.fn(),
-    getAttribute: jest.fn(),
-    classList: {
-      add: jest.fn(),
-      remove: jest.fn(),
-      toggle: jest.fn(),
-      contains: jest.fn(() => false)
-    }
-  })),
+  value: jest.fn((tag) => {
+    const element = {
+      tagName: tag.toUpperCase(),
+      _className: '',
+      style: {},
+      _innerHTML: '',
+      _textContent: '',
+      onclick: null,
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      click: jest.fn(),
+      appendChild: jest.fn(),
+      removeChild: jest.fn(),
+      setAttribute: jest.fn(),
+      getAttribute: jest.fn(),
+      closest: jest.fn(),
+      matches: jest.fn(),
+      classList: {
+        add: jest.fn(),
+        remove: jest.fn(),
+        toggle: jest.fn(),
+        contains: jest.fn(() => false)
+      },
+      // For canvas elements
+      getContext: jest.fn(() => mockCanvasContext),
+      toDataURL: jest.fn(() => 'data:image/png;base64,mock-temp-canvas'),
+      toBlob: jest.fn((callback) => {
+        const blob = new Blob(['mock-blob'], { type: 'image/png' });
+        callback(blob);
+      }),
+      width: 800,
+      height: 600,
+      // For link elements - track assignments
+      _href: '',
+      _download: '',
+      // Use getters/setters to track property assignments
+      get className() { return this._className; },
+      set className(value) { this._className = value; },
+      get innerHTML() { return this._innerHTML; },
+      set innerHTML(value) { this._innerHTML = value; },
+      get textContent() { return this._textContent; },
+      set textContent(value) { this._textContent = value; },
+      get href() { return this._href; },
+      set href(value) { this._href = value; },
+      get download() { return this._download; },
+      set download(value) { this._download = value; }
+    };
+    return element;
+  }),
   writable: true
 });
 
-// Mock document.hidden property for visibility API
-Object.defineProperty(document, 'hidden', {
-  value: false,
-  writable: true
-});
+// Mock document.hidden property for visibility API - only if not already defined
+if (!document.hasOwnProperty('hidden')) {
+  Object.defineProperty(document, 'hidden', {
+    value: false,
+    writable: true,
+    configurable: true
+  });
+}
 
 // Set up DOM for testing
 document.body.innerHTML = `

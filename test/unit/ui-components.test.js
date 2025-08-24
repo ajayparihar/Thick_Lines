@@ -550,4 +550,28 @@ describe('UI Components (unit)', () => {
       expect(mockElements.helpPanel.classList.contains).toHaveBeenCalled();
     });
   });
+
+  describe('Tool and Color Switching', () => {
+    test('should switch to pen tool on click', () => {
+      setupToolButtons();
+      const clickHandler = mockElements.penBtn.addEventListener.mock.calls[0][1];
+      clickHandler({ stopPropagation: jest.fn() });
+      expect(global.currentTool).toBe('pen');
+    });
+
+    test('should switch to eraser tool on click', () => {
+      setupToolButtons();
+      const clickHandler = mockElements.eraserBtn.addEventListener.mock.calls[0][1];
+      clickHandler({ stopPropagation: jest.fn() });
+      expect(global.currentTool).toBe('eraser');
+    });
+
+    test('should switch color on click', () => {
+      setupColorButtons();
+      const greenButton = mockElements.colorButtons[1];
+      const clickHandler = greenButton.addEventListener.mock.calls[0][1];
+      clickHandler();
+      expect(global.currentColor).toBe('#10b981');
+    });
+  });
 });
