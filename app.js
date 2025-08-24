@@ -1942,18 +1942,21 @@ window.onload = function() {
     // Add mousewheel for scrolling - moved inside onload to ensure canvas is initialized
     if (canvas) {
       canvas.addEventListener('wheel', function(e) {
-        e.preventDefault();
+        // Only prevent default if we're actually handling the event
+        if (e.shiftKey || !e.ctrlKey) {
+          e.preventDefault();
 
-        if (e.shiftKey) {
-          // Shift + wheel for horizontal scrolling
-          panOffsetX += e.deltaY;
-          applyTransform(false);
-        } else {
-          // Regular wheel for vertical scrolling
-          panOffsetY += e.deltaY;
-          applyTransform(false);
+          if (e.shiftKey) {
+            // Shift + wheel for horizontal scrolling
+            panOffsetX += e.deltaY;
+            applyTransform(false);
+          } else {
+            // Regular wheel for vertical scrolling
+            panOffsetY += e.deltaY;
+            applyTransform(false);
+          }
         }
-      });
+      }, { passive: false });
     }
   } catch (error) {
     console.error('Error initializing application:', error);
