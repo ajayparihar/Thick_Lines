@@ -1,4 +1,16 @@
+/**
+ * Thick Lines Drawing Application
+ * A sophisticated HTML5 canvas-based drawing application with advanced features
+ * including pressure sensitivity, layer system, touch support, and accessibility features.
+ * 
+ * @file app.js - Main application entry point and core functionality
+ * @version 1.0.0
+ * @author Thick Lines Development Team
+ * @requires HTML5 Canvas API, ES6+ JavaScript support
+ */
+
 // Initialize the application when DOM is fully loaded
+// This ensures all DOM elements are available before setup begins
 document.addEventListener('DOMContentLoaded', init);
 
 // Canvas setup and state management
@@ -83,6 +95,33 @@ let lastTouchPanPoint = null;
 let touchPanThreshold = 10; // px
 let supportsPointerEvents = 'PointerEvent' in window;
 let supportsTouchEvents = 'TouchEvent' in window;
+
+// Advanced drawing features
+let currentPressure = 0.5; // Default pressure for non-pressure devices
+let supportsPressure = false;
+let pressureSmoothing = 0.3; // Smoothing factor for pressure changes
+let lastPressure = 0.5;
+let minPressureWidth = 0.1; // Minimum width multiplier
+let maxPressureWidth = 2.0; // Maximum width multiplier
+
+// Layer system
+let layers = [];
+let currentLayerIndex = 0;
+let layerCounter = 1;
+let layersVisible = true;
+
+// Selection system
+let selectionMode = false;
+let selectionStart = null;
+let selectionEnd = null;
+let selectedRegion = null;
+let selectionCanvas = null;
+let selectionCtx = null;
+
+// Command pattern for undo/redo
+let commandHistory = [];
+let currentCommandIndex = -1;
+const MAX_COMMANDS = 50;
 
 // Debounce function for performance optimization
 function debounce(func, wait) {
@@ -175,6 +214,11 @@ function init() {
     console.log('Setting up UI components...');
     // Setup UI components
     setupUI();
+
+    // Initialize advanced features
+    initLayers();
+    initSelectionSystem();
+    initPressureSupport();
 
     // Initial state save (blank canvas)
     saveState();
@@ -821,38 +865,67 @@ function stopCanvasPan() {
 function startDrawing(e) {
   try {
     e.preventDefault();
+    
+    // Check if current layer is locked
+    const currentLayer = getCurrentLayer();
+    if (currentLayer && currentLayer.locked) {
+      showToast('Cannot draw on locked layer', 'info');
+      return;
+    }
+    
     isDrawing = true;
 
     console.log(`Starting drawing with tool: ${currentTool}, color: ${currentColor}, size: ${currentTool === 'pen' ? penSize : eraserSize}`);
 
-    // Get coordinates based on pointer/touch position
+    // Get coordinates and pressure
     const { x, y } = getCoordinates(e);
-    console.log(`Drawing coordinates: x=${x}, y=${y}`);
+    const pressure = getPressureFromEvent(e);
+    currentPressure = pressure;
+    
+    console.log(`Drawing coordinates: x=${x}, y=${y}, pressure: ${pressure}`);
 
-    // Save the context state
-    ctx.save();
-
-    // Ensure correct composite operation for the active tool
-    ctx.globalCompositeOperation = currentTool === 'eraser' ? 'destination-out' : 'source-over';
-
-    // Draw a dot at the starting point
-    drawDot(x, y);
+    // Draw on the current layer instead of main canvas
+    if (currentLayer) {
+      const layerCtx = currentLayer.ctx;
+      layerCtx.save();
+      
+      // Set correct composite operation for the active tool
+      layerCtx.globalCompositeOperation = currentTool === 'eraser' ? 'destination-out' : 'source-over';
+      
+      // Calculate pressure-based size for pen tool
+      let effectiveSize = currentTool === 'pen' ? penSize : eraserSize;
+      if (currentTool === 'pen' && supportsPressure) {
+        effectiveSize = calculatePressureWidth(penSize, pressure);
+      }
+      
+      // Draw a dot at the starting point on the layer
+      drawDotOnLayer(x, y, effectiveSize, layerCtx);
+      
+      layerCtx.restore();
+    }
 
     // Create a new path and add it to drawingPaths
     currentPath = {
       tool: currentTool,
       color: currentColor,
       size: currentTool === 'pen' ? penSize : eraserSize,
-      points: [{ x, y, t: performance.now() }],
-      lastWidth: currentTool === 'pen' ? penSize : eraserSize
+      points: [{ x, y, t: performance.now(), pressure }],
+      lastWidth: currentTool === 'pen' ? penSize : eraserSize,
+      layerIndex: currentLayerIndex
     };
 
     drawingPaths.push(currentPath);
 
     // Show size visualizer
     if (domElements.sizeVisualizer) {
-      showSizeVisualizer(x, y, currentTool === 'pen' ? penSize : eraserSize);
+      const displaySize = currentTool === 'pen' && supportsPressure ? 
+        calculatePressureWidth(penSize, pressure) : 
+        (currentTool === 'pen' ? penSize : eraserSize);
+      showSizeVisualizer(x, y, displaySize);
     }
+    
+    // Refresh main canvas to show the change
+    refreshCanvas();
   } catch (error) {
     console.error('Error in startDrawing:', error);
     isDrawing = false; // Reset drawing state on error
@@ -865,18 +938,26 @@ function draw(e) {
 
   const { x, y } = getCoordinates(e);
   const now = performance.now();
+  const pressure = getPressureFromEvent(e);
+  currentPressure = pressure;
 
   if (currentPath && currentPath.points.length > 0) {
     const prevPoint = currentPath.points[currentPath.points.length - 1];
-
-    if (currentTool === 'pen') {
-      drawPenPath(prevPoint, { x, y, t: now });
-    } else if (currentTool === 'eraser') {
-      drawEraserPath(prevPoint, { x, y });
+    const currentLayer = getCurrentLayer();
+    
+    if (currentLayer) {
+      if (currentTool === 'pen') {
+        drawPenPathOnLayer(prevPoint, { x, y, t: now, pressure }, currentLayer.ctx);
+      } else if (currentTool === 'eraser') {
+        drawEraserPathOnLayer(prevPoint, { x, y }, currentLayer.ctx);
+      }
+      
+      // Refresh main canvas to show the changes
+      refreshCanvas();
     }
 
     // Add point to current path
-    currentPath.points.push({ x, y, t: now });
+    currentPath.points.push({ x, y, t: now, pressure });
   }
 }
 
@@ -1989,6 +2070,32 @@ function drawDot(x, y) {
   }
 }
 
+// Draw a dot on a specific layer context
+function drawDotOnLayer(x, y, size, layerCtx) {
+  if (!layerCtx) return;
+
+  // Set up the style based on current tool
+  if (currentTool === 'pen') {
+    layerCtx.globalCompositeOperation = 'source-over';
+    layerCtx.fillStyle = currentColor;
+    const dotSize = size / 2;
+
+    // Draw circle
+    layerCtx.beginPath();
+    layerCtx.arc(x, y, dotSize, 0, Math.PI * 2);
+    layerCtx.fill();
+  } else if (currentTool === 'eraser') {
+    layerCtx.globalCompositeOperation = 'destination-out';
+    layerCtx.fillStyle = 'rgba(0, 0, 0, 1)'; // Color doesn't matter with destination-out
+    const dotSize = size / 2;
+
+    // Draw circle
+    layerCtx.beginPath();
+    layerCtx.arc(x, y, dotSize, 0, Math.PI * 2);
+    layerCtx.fill();
+  }
+}
+
 // New function for drawing pen paths
 function drawPenPath(prevPoint, currentPoint) {
   // Save the current context state
@@ -2079,6 +2186,110 @@ function drawEraserPath(prevPoint, currentPoint) {
   }
 
   ctx.restore();
+}
+
+// Layer-specific pen path drawing function
+function drawPenPathOnLayer(prevPoint, currentPoint, layerCtx) {
+  if (!layerCtx) return;
+  
+  // Save the current context state
+  layerCtx.save();
+
+  // Set drawing parameters for pen
+  layerCtx.globalCompositeOperation = 'source-over';
+  layerCtx.strokeStyle = currentColor;
+  layerCtx.lineCap = 'round';
+  layerCtx.lineJoin = 'round';
+
+  // Access previous points for smoothing
+  const points = currentPath ? currentPath.points : [];
+  const p0 = points && points.length >= 2 ? points[points.length - 2] : null; // point before prev
+  const p1 = prevPoint;
+  const p2 = currentPoint;
+
+  // Compute velocity (px per ms) and map to dynamic width
+  let v = 0;
+  if (p1 && p2 && typeof p2.t === 'number' && typeof p1.t === 'number') {
+    const dt = Math.max(1, p2.t - p1.t);
+    v = distance(p1, p2) / dt;
+  }
+  
+  // Apply pressure if supported
+  let effectiveSize = penSize;
+  if (supportsPressure && p2.pressure !== undefined) {
+    effectiveSize = calculatePressureWidth(penSize, p2.pressure);
+  } else {
+    const targetWidth = velocityToWidth(v, penSize);
+    const last = currentPath && typeof currentPath.lastWidth === 'number' ? currentPath.lastWidth : penSize;
+    effectiveSize = last * 0.7 + targetWidth * 0.3; // low-pass filter for stability
+  }
+  
+  if (currentPath) currentPath.lastWidth = effectiveSize;
+  layerCtx.lineWidth = effectiveSize;
+
+  // Smooth with quadratic curve between midpoints
+  if (p0) {
+    const m1 = midpoint(p0, p1);
+    const m2 = midpoint(p1, p2);
+    layerCtx.beginPath();
+    layerCtx.moveTo(m1.x, m1.y);
+    layerCtx.quadraticCurveTo(p1.x, p1.y, m2.x, m2.y);
+    layerCtx.stroke();
+  } else {
+    // Fallback for the very first segment
+    layerCtx.beginPath();
+    layerCtx.moveTo(p1.x, p1.y);
+    layerCtx.lineTo(p2.x, p2.y);
+    layerCtx.stroke();
+  }
+
+  // Restore the context state
+  layerCtx.restore();
+
+  // Helper functions scoped here to avoid polluting global namespace
+  function distance(a, b) { const dx = a.x - b.x; const dy = a.y - b.y; return Math.hypot(dx, dy); }
+  function midpoint(a, b) { return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; }
+  function velocityToWidth(v, base) {
+    const minW = Math.max(0.5, base * 0.35);
+    const maxW = base * 1.25;
+    const norm = Math.min(v / 0.4, 1); // 0..1 where ~0.4 px/ms is fast
+    return maxW - (maxW - minW) * norm;
+  }
+}
+
+// Layer-specific eraser path drawing function
+function drawEraserPathOnLayer(prevPoint, currentPoint, layerCtx) {
+  if (!layerCtx) return;
+  
+  // Smooth, constant-width eraser using midpoint quadratic curves
+  layerCtx.save();
+  layerCtx.globalCompositeOperation = 'destination-out';
+  layerCtx.strokeStyle = 'rgba(0,0,0,1)';
+  layerCtx.lineCap = 'round';
+  layerCtx.lineJoin = 'round';
+
+  const points = currentPath ? currentPath.points : [];
+  const p0 = points && points.length >= 2 ? points[points.length - 2] : null;
+  const p1 = prevPoint;
+  const p2 = currentPoint;
+
+  layerCtx.lineWidth = eraserSize; // keep constant eraser size to avoid artifacts
+
+  if (p0) {
+    const m1 = { x: (p0.x + p1.x) / 2, y: (p0.y + p1.y) / 2 };
+    const m2 = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+    layerCtx.beginPath();
+    layerCtx.moveTo(m1.x, m1.y);
+    layerCtx.quadraticCurveTo(p1.x, p1.y, m2.x, m2.y);
+    layerCtx.stroke();
+  } else {
+    layerCtx.beginPath();
+    layerCtx.moveTo(p1.x, p1.y);
+    layerCtx.lineTo(p2.x, p2.y);
+    layerCtx.stroke();
+  }
+
+  layerCtx.restore();
 }
 
 // Cache frequently used elements for event handlers
@@ -2465,6 +2676,681 @@ function normalizeCoordinates(x, y) {
     x: Math.round(x),
     y: Math.round(y)
   };
+}
+
+// Command pattern implementation for advanced undo/redo
+class Command {
+  constructor(name) {
+    this.name = name;
+    this.timestamp = Date.now();
+    this.id = Math.random().toString(36).substr(2, 9);
+  }
+
+  execute() {
+    throw new Error('Execute method must be implemented');
+  }
+
+  undo() {
+    throw new Error('Undo method must be implemented');
+  }
+
+  canMerge(other) {
+    return false;
+  }
+}
+
+class DrawCommand extends Command {
+  constructor(layerIndex, pathData, previousState) {
+    super('Draw');
+    this.layerIndex = layerIndex;
+    this.pathData = pathData;
+    this.previousState = previousState;
+  }
+
+  execute() {
+    // Draw the path on the specified layer
+    if (layers[this.layerIndex]) {
+      drawPathOnLayer(this.pathData, this.layerIndex);
+      refreshCanvas();
+    }
+  }
+
+  undo() {
+    // Restore the previous state
+    if (this.previousState && layers[this.layerIndex]) {
+      loadLayerState(this.layerIndex, this.previousState);
+      refreshCanvas();
+    }
+  }
+
+  canMerge(other) {
+    // Merge consecutive draw commands on the same layer within a short time
+    return other instanceof DrawCommand &&
+           other.layerIndex === this.layerIndex &&
+           (this.timestamp - other.timestamp) < 1000; // 1 second
+  }
+}
+
+class LayerCommand extends Command {
+  constructor(action, layerData, layerIndex) {
+    super(`Layer ${action}`);
+    this.action = action; // 'add', 'delete', 'reorder', etc.
+    this.layerData = layerData;
+    this.layerIndex = layerIndex;
+  }
+
+  execute() {
+    switch (this.action) {
+      case 'add':
+        layers.splice(this.layerIndex, 0, this.layerData);
+        if (currentLayerIndex >= this.layerIndex) {
+          currentLayerIndex++;
+        }
+        break;
+      case 'delete':
+        layers.splice(this.layerIndex, 1);
+        if (currentLayerIndex >= this.layerIndex && currentLayerIndex > 0) {
+          currentLayerIndex--;
+        }
+        break;
+      case 'reorder':
+        // layerData contains {fromIndex, toIndex}
+        const layer = layers.splice(this.layerData.fromIndex, 1)[0];
+        layers.splice(this.layerData.toIndex, 0, layer);
+        break;
+    }
+    updateLayerPanel();
+    refreshCanvas();
+  }
+
+  undo() {
+    switch (this.action) {
+      case 'add':
+        layers.splice(this.layerIndex, 1);
+        if (currentLayerIndex > this.layerIndex) {
+          currentLayerIndex--;
+        }
+        break;
+      case 'delete':
+        layers.splice(this.layerIndex, 0, this.layerData);
+        if (currentLayerIndex >= this.layerIndex) {
+          currentLayerIndex++;
+        }
+        break;
+      case 'reorder':
+        // Reverse the reorder
+        const layer = layers.splice(this.layerData.toIndex, 1)[0];
+        layers.splice(this.layerData.fromIndex, 0, layer);
+        break;
+    }
+    updateLayerPanel();
+    refreshCanvas();
+  }
+}
+
+class SelectionCommand extends Command {
+  constructor(action, selectionData, transformData) {
+    super(`Selection ${action}`);
+    this.action = action; // 'move', 'transform', 'delete'
+    this.selectionData = selectionData;
+    this.transformData = transformData;
+    this.previousState = getCurrentLayerState();
+  }
+
+  execute() {
+    // Apply the selection transformation
+    applySelectionTransform(this.selectionData, this.transformData);
+    refreshCanvas();
+  }
+
+  undo() {
+    // Restore the previous state
+    if (this.previousState) {
+      loadLayerState(currentLayerIndex, this.previousState);
+      refreshCanvas();
+    }
+  }
+}
+
+// Layer system implementation
+class Layer {
+  constructor(name = null) {
+    this.id = Math.random().toString(36).substr(2, 9);
+    this.name = name || `Layer ${layerCounter++}`;
+    this.visible = true;
+    this.opacity = 1.0;
+    this.blendMode = 'normal';
+    this.locked = false;
+    this.canvas = document.createElement('canvas');
+    this.ctx = this.canvas.getContext('2d');
+    this.resizeToMatch(canvas);
+  }
+
+  resizeToMatch(targetCanvas) {
+    if (!targetCanvas) return;
+    
+    const prevData = this.canvas.width > 0 ? this.canvas.toDataURL() : null;
+    
+    this.canvas.width = targetCanvas.width;
+    this.canvas.height = targetCanvas.height;
+    
+    // Clear with transparent background
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    
+    // Restore previous content if it existed
+    if (prevData) {
+      const img = new Image();
+      img.onload = () => {
+        this.ctx.drawImage(img, 0, 0);
+      };
+      img.src = prevData;
+    }
+  }
+
+  clear() {
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+  }
+
+  getState() {
+    return this.canvas.toDataURL();
+  }
+
+  loadState(dataURL) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.drawImage(img, 0, 0);
+        resolve();
+      };
+      img.onerror = reject;
+      img.src = dataURL;
+    });
+  }
+}
+
+// Initialize layers system
+function initLayers() {
+  layers = [];
+  currentLayerIndex = 0;
+  layerCounter = 1;
+  
+  // Create initial layer
+  const initialLayer = new Layer('Background');
+  layers.push(initialLayer);
+  
+  updateLayerPanel();
+}
+
+// Add a new layer
+function addLayer(name = null) {
+  const newLayer = new Layer(name);
+  const insertIndex = currentLayerIndex + 1;
+  
+  const command = new LayerCommand('add', newLayer, insertIndex);
+  executeCommand(command);
+  
+  currentLayerIndex = insertIndex;
+  updateLayerPanel();
+  showToast(`Added layer: ${newLayer.name}`, 'info');
+}
+
+// Delete the current layer
+function deleteLayer(index = currentLayerIndex) {
+  if (layers.length <= 1) {
+    showToast('Cannot delete the last layer', 'info');
+    return;
+  }
+  
+  const layerToDelete = layers[index];
+  const command = new LayerCommand('delete', layerToDelete, index);
+  executeCommand(command);
+  
+  // Adjust current layer index
+  if (currentLayerIndex >= index && currentLayerIndex > 0) {
+    currentLayerIndex--;
+  }
+  
+  updateLayerPanel();
+  refreshCanvas();
+  showToast(`Deleted layer: ${layerToDelete.name}`, 'info');
+}
+
+// Switch to a different layer
+function switchToLayer(index) {
+  if (index >= 0 && index < layers.length) {
+    currentLayerIndex = index;
+    updateLayerPanel();
+    showToast(`Switched to: ${layers[index].name}`, 'info');
+  }
+}
+
+// Get the current layer
+function getCurrentLayer() {
+  return layers[currentLayerIndex] || layers[0];
+}
+
+// Get current layer state
+function getCurrentLayerState() {
+  const currentLayer = getCurrentLayer();
+  return currentLayer ? currentLayer.getState() : null;
+}
+
+// Load state into specific layer
+function loadLayerState(layerIndex, dataURL) {
+  if (layers[layerIndex]) {
+    return layers[layerIndex].loadState(dataURL);
+  }
+  return Promise.reject('Layer not found');
+}
+
+// Draw a path on a specific layer
+function drawPathOnLayer(pathData, layerIndex) {
+  const layer = layers[layerIndex];
+  if (!layer) return;
+  
+  const ctx = layer.ctx;
+  ctx.save();
+  
+  // Set up drawing context based on path data
+  if (pathData.tool === 'pen') {
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.strokeStyle = pathData.color;
+    ctx.lineWidth = pathData.size;
+  } else if (pathData.tool === 'eraser') {
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.lineWidth = pathData.size;
+  }
+  
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  
+  // Draw the path
+  if (pathData.points && pathData.points.length > 1) {
+    ctx.beginPath();
+    ctx.moveTo(pathData.points[0].x, pathData.points[0].y);
+    
+    for (let i = 1; i < pathData.points.length; i++) {
+      ctx.lineTo(pathData.points[i].x, pathData.points[i].y);
+    }
+    
+    ctx.stroke();
+  } else if (pathData.points && pathData.points.length === 1) {
+    // Single point - draw a dot
+    const point = pathData.points[0];
+    ctx.beginPath();
+    ctx.arc(point.x, point.y, pathData.size / 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  
+  ctx.restore();
+}
+
+// Refresh the main canvas by compositing all layers
+function refreshCanvas() {
+  if (!ctx || !canvas) return;
+  
+  // Save current transform
+  const currentTransform = ctx.getTransform();
+  
+  // Reset transform for clearing
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  
+  // Clear main canvas
+  ctx.fillStyle = CANVAS_BG_COLOR;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  // Restore transform
+  ctx.setTransform(currentTransform);
+  
+  // Composite all visible layers
+  layers.forEach((layer, index) => {
+    if (layer.visible && layer.canvas) {
+      ctx.save();
+      ctx.globalAlpha = layer.opacity;
+      ctx.globalCompositeOperation = layer.blendMode;
+      
+      const dpr = window.devicePixelRatio || 1;
+      ctx.drawImage(layer.canvas, 0, 0, 
+        layer.canvas.width / dpr, 
+        layer.canvas.height / dpr);
+      
+      ctx.restore();
+    }
+  });
+  
+  // Draw rulers if enabled
+  if (showRulers) {
+    drawRulers();
+    if (lastMouseX && lastMouseY) {
+      drawCursorGuides(lastMouseX, lastMouseY);
+    }
+  }
+}
+
+// Command execution system
+function executeCommand(command) {
+  // Remove any commands after current position
+  commandHistory = commandHistory.slice(0, currentCommandIndex + 1);
+  
+  // Check if we can merge with the previous command
+  if (commandHistory.length > 0) {
+    const lastCommand = commandHistory[commandHistory.length - 1];
+    if (command.canMerge(lastCommand)) {
+      // Replace the last command instead of adding a new one
+      commandHistory[commandHistory.length - 1] = command;
+      command.execute();
+      return;
+    }
+  }
+  
+  // Add command to history
+  commandHistory.push(command);
+  currentCommandIndex = commandHistory.length - 1;
+  
+  // Limit command history size
+  if (commandHistory.length > MAX_COMMANDS) {
+    commandHistory.shift();
+    currentCommandIndex--;
+  }
+  
+  // Execute the command
+  command.execute();
+  
+  updateUndoRedoButtons();
+}
+
+// Advanced undo using command pattern
+function advancedUndo() {
+  if (currentCommandIndex >= 0) {
+    const command = commandHistory[currentCommandIndex];
+    command.undo();
+    currentCommandIndex--;
+    updateUndoRedoButtons();
+    showToast(`Undid: ${command.name}`, 'info');
+  }
+}
+
+// Advanced redo using command pattern
+function advancedRedo() {
+  if (currentCommandIndex < commandHistory.length - 1) {
+    currentCommandIndex++;
+    const command = commandHistory[currentCommandIndex];
+    command.execute();
+    updateUndoRedoButtons();
+    showToast(`Redid: ${command.name}`, 'info');
+  }
+}
+
+// Update layer panel UI
+function updateLayerPanel() {
+  const layerPanel = document.querySelector('.layer-panel');
+  if (!layerPanel) return;
+  
+  const layerList = layerPanel.querySelector('.layer-list');
+  if (!layerList) return;
+  
+  // Clear existing layer items
+  layerList.innerHTML = '';
+  
+  // Add layers in reverse order (top layer first in UI)
+  for (let i = layers.length - 1; i >= 0; i--) {
+    const layer = layers[i];
+    const layerItem = createLayerItem(layer, i);
+    layerList.appendChild(layerItem);
+  }
+}
+
+// Create a layer item for the layer panel
+function createLayerItem(layer, index) {
+  const item = document.createElement('div');
+  item.className = `layer-item ${index === currentLayerIndex ? 'active' : ''}`;
+  item.dataset.layerIndex = index;
+  
+  item.innerHTML = `
+    <div class="layer-thumbnail">
+      <canvas width="40" height="30"></canvas>
+    </div>
+    <div class="layer-info">
+      <span class="layer-name">${layer.name}</span>
+      <div class="layer-controls">
+        <button class="layer-visibility-btn ${layer.visible ? 'visible' : 'hidden'}" 
+                title="${layer.visible ? 'Hide' : 'Show'} layer">
+          <i class="fas ${layer.visible ? 'fa-eye' : 'fa-eye-slash'}"></i>
+        </button>
+        <button class="layer-lock-btn ${layer.locked ? 'locked' : 'unlocked'}" 
+                title="${layer.locked ? 'Unlock' : 'Lock'} layer">
+          <i class="fas ${layer.locked ? 'fa-lock' : 'fa-unlock'}"></i>
+        </button>
+      </div>
+    </div>
+  `;
+  
+  // Generate thumbnail
+  const thumbnailCanvas = item.querySelector('canvas');
+  const thumbnailCtx = thumbnailCanvas.getContext('2d');
+  if (layer.canvas.width > 0) {
+    thumbnailCtx.drawImage(layer.canvas, 0, 0, 40, 30);
+  }
+  
+  // Add event listeners
+  item.addEventListener('click', () => switchToLayer(index));
+  
+  const visibilityBtn = item.querySelector('.layer-visibility-btn');
+  visibilityBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleLayerVisibility(index);
+  });
+  
+  const lockBtn = item.querySelector('.layer-lock-btn');
+  lockBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleLayerLock(index);
+  });
+  
+  return item;
+}
+
+// Toggle layer visibility
+function toggleLayerVisibility(index) {
+  if (layers[index]) {
+    layers[index].visible = !layers[index].visible;
+    updateLayerPanel();
+    refreshCanvas();
+    
+    const status = layers[index].visible ? 'shown' : 'hidden';
+    showToast(`Layer ${status}: ${layers[index].name}`, 'info');
+  }
+}
+
+// Toggle layer lock
+function toggleLayerLock(index) {
+  if (layers[index]) {
+    layers[index].locked = !layers[index].locked;
+    updateLayerPanel();
+    
+    const status = layers[index].locked ? 'locked' : 'unlocked';
+    showToast(`Layer ${status}: ${layers[index].name}`, 'info');
+  }
+}
+
+// Selection system implementation
+function initSelectionSystem() {
+  // Create selection canvas overlay
+  selectionCanvas = document.createElement('canvas');
+  selectionCanvas.id = 'selection-canvas';
+  selectionCanvas.style.position = 'absolute';
+  selectionCanvas.style.top = '0';
+  selectionCanvas.style.left = '0';
+  selectionCanvas.style.pointerEvents = 'none';
+  selectionCanvas.style.zIndex = '10';
+  
+  selectionCtx = selectionCanvas.getContext('2d');
+  
+  // Add to canvas container
+  const canvasContainer = canvas.parentElement;
+  canvasContainer.appendChild(selectionCanvas);
+  
+  // Match canvas size
+  resizeSelectionCanvas();
+}
+
+// Resize selection canvas to match main canvas
+function resizeSelectionCanvas() {
+  if (!selectionCanvas || !canvas) return;
+  
+  selectionCanvas.width = canvas.width;
+  selectionCanvas.height = canvas.height;
+  selectionCanvas.style.width = canvas.style.width;
+  selectionCanvas.style.height = canvas.style.height;
+  
+  // Scale context to match device pixel ratio
+  const dpr = window.devicePixelRatio || 1;
+  selectionCtx.scale(dpr, dpr);
+}
+
+// Toggle selection mode
+function toggleSelectionMode() {
+  selectionMode = !selectionMode;
+  
+  if (selectionMode) {
+    clearSelection();
+    canvas.style.cursor = 'crosshair';
+    showToast('Selection mode enabled - drag to select region', 'info');
+  } else {
+    clearSelection();
+    updateCursor();
+    showToast('Selection mode disabled', 'info');
+  }
+  
+  // Update selection tool button
+  const selectionBtn = document.getElementById('selectionBtn');
+  if (selectionBtn) {
+    selectionBtn.classList.toggle('active', selectionMode);
+  }
+}
+
+// Start selection
+function startSelection(x, y) {
+  selectionStart = { x, y };
+  selectionEnd = { x, y };
+  drawSelection();
+}
+
+// Update selection while dragging
+function updateSelection(x, y) {
+  if (!selectionStart) return;
+  
+  selectionEnd = { x, y };
+  drawSelection();
+}
+
+// Draw selection rectangle
+function drawSelection() {
+  if (!selectionCanvas || !selectionCtx || !selectionStart || !selectionEnd) return;
+  
+  // Clear selection canvas
+  selectionCtx.clearRect(0, 0, selectionCanvas.width, selectionCanvas.height);
+  
+  // Calculate selection rectangle
+  const x = Math.min(selectionStart.x, selectionEnd.x);
+  const y = Math.min(selectionStart.y, selectionEnd.y);
+  const width = Math.abs(selectionEnd.x - selectionStart.x);
+  const height = Math.abs(selectionEnd.y - selectionStart.y);
+  
+  // Draw selection rectangle
+  selectionCtx.save();
+  selectionCtx.strokeStyle = '#3b82f6';
+  selectionCtx.lineWidth = 2;
+  selectionCtx.setLineDash([5, 5]);
+  
+  selectionCtx.strokeRect(x, y, width, height);
+  
+  // Draw selection handles
+  const handleSize = 8;
+  selectionCtx.fillStyle = '#3b82f6';
+  selectionCtx.fillRect(x - handleSize/2, y - handleSize/2, handleSize, handleSize);
+  selectionCtx.fillRect(x + width - handleSize/2, y - handleSize/2, handleSize, handleSize);
+  selectionCtx.fillRect(x - handleSize/2, y + height - handleSize/2, handleSize, handleSize);
+  selectionCtx.fillRect(x + width - handleSize/2, y + height - handleSize/2, handleSize, handleSize);
+  
+  selectionCtx.restore();
+}
+
+// Finish selection
+function finishSelection() {
+  if (!selectionStart || !selectionEnd) return;
+  
+  const x = Math.min(selectionStart.x, selectionEnd.x);
+  const y = Math.min(selectionStart.y, selectionEnd.y);
+  const width = Math.abs(selectionEnd.x - selectionStart.x);
+  const height = Math.abs(selectionEnd.y - selectionStart.y);
+  
+  // Only create selection if it has meaningful size
+  if (width > 5 && height > 5) {
+    selectedRegion = { x, y, width, height };
+    showToast('Region selected - use Ctrl+C to copy, Del to delete', 'info');
+  } else {
+    clearSelection();
+  }
+}
+
+// Clear selection
+function clearSelection() {
+  selectionStart = null;
+  selectionEnd = null;
+  selectedRegion = null;
+  
+  if (selectionCtx) {
+    selectionCtx.clearRect(0, 0, selectionCanvas.width, selectionCanvas.height);
+  }
+}
+
+// Apply selection transform
+function applySelectionTransform(selectionData, transformData) {
+  // Implementation for moving/transforming selected content
+  // This is a placeholder for the full implementation
+  console.log('Applying selection transform:', transformData);
+}
+
+// Pressure sensitivity implementation
+function initPressureSupport() {
+  // Check if the browser supports pressure-sensitive input
+  supportsPressure = 'force' in PointerEvent.prototype || 
+                     (window.TouchEvent && 'force' in TouchEvent.prototype);
+  
+  if (supportsPressure) {
+    console.log('Pressure sensitivity supported');
+    showToast('Pressure sensitivity enabled', 'info');
+  }
+}
+
+// Get pressure from event
+function getPressureFromEvent(e) {
+  if (!supportsPressure) return currentPressure;
+  
+  let pressure = currentPressure;
+  
+  // Try to get pressure from pointer event
+  if (e.pressure !== undefined) {
+    pressure = e.pressure;
+  }
+  // Try to get pressure from touch event
+  else if (e.touches && e.touches.length > 0 && e.touches[0].force !== undefined) {
+    pressure = e.touches[0].force;
+  }
+  
+  // Smooth pressure changes
+  const smoothedPressure = lastPressure * (1 - pressureSmoothing) + pressure * pressureSmoothing;
+  lastPressure = smoothedPressure;
+  
+  return Math.max(0.1, Math.min(1.0, smoothedPressure));
+}
+
+// Calculate line width based on pressure
+function calculatePressureWidth(baseSIze, pressure) {
+  const multiplier = minPressureWidth + (maxPressureWidth - minPressureWidth) * pressure;
+  return baseSIze * multiplier;
 }
 
 // Export functions for testing (only in Node.js environment)
