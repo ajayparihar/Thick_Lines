@@ -122,7 +122,9 @@ Object.defineProperty(document, 'getElementById', {
       set textContent(value) { this._textContent = value; }
     };
     return mockElement;
-  })
+  }),
+  writable: true,
+  configurable: true
 });
 
 // Mock query selectors
@@ -145,7 +147,9 @@ Object.defineProperty(document, 'querySelector', {
     clientHeight: 600,
     setAttribute: jest.fn(),
     getAttribute: jest.fn()
-  }))
+  })),
+  writable: true,
+  configurable: true
 });
 
 Object.defineProperty(document, 'querySelectorAll', {
@@ -219,7 +223,9 @@ Object.defineProperty(document, 'querySelectorAll', {
       ];
     }
     return [];
-  })
+  }),
+  writable: true,
+  configurable: true
 });
 
 // Mock window properties

@@ -47,11 +47,11 @@ This document outlines the security features implemented in Thick Lines and prov
 Add the following CSP header to your web server configuration:
 
 ```
-Content-Security-Policy: default-src 'self'; 
-  script-src 'self' 'unsafe-inline'; 
-  style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; 
-  font-src 'self' https://cdnjs.cloudflare.com; 
-  img-src 'self' data: blob:; 
+Content-Security-Policy: default-src 'self';
+  script-src 'self';
+  style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com;
+  font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com;
+  img-src 'self' data: blob:;
   connect-src 'self';
   base-uri 'self';
   form-action 'self';
