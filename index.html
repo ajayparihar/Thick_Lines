@@ -1,148 +1,142 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Thick Lines - A minimalist whiteboard with four colors.">
-    <meta name="author" content="Bheb Developer">
-    <meta name="keywords" content="whiteboard, drawing, RGBY, online whiteboard">
-    <meta name="theme-color" content="#0f172a">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Thick Lines</title>
-    
-    <!-- Preload critical resources -->
-    <link rel="preload" href="style.css" as="style">
-    <link rel="stylesheet" href="style.css">
-    
-    <!-- Preconnect to external domains -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
-    
-    <!-- Favicon and fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css" integrity="sha512-xh6O/CkQoPOWDdYTDqeRdPCVd1SpvCA9XXcUnZS2FmJNp1coAFzvtCN9BmamE+4aHK8yyUHUSCcJHgXloTyT2A==" crossorigin="anonymous" referrerpolicy="no-referrer">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%230f172a'/%3E%3Cpath d='M50 5A45 45 0 1 1 5 50 45 45 0 0 1 50 5m0-5a50 50 0 1 0 50 50A50 50 0 0 0 50 0z' fill='rgba(255,255,255,0.2)'/%3E%3Cpath d='M50 5A45 45 0 0 1 95 50H50V5z' fill='%23ef4444'/%3E%3Cpath d='M50 50h45A45 45 0 0 1 50 95V50z' fill='%2310b981'/%3E%3Cpath d='M50 95A45 45 0 0 1 5 50h45v45z' fill='%233b82f6'/%3E%3Cpath d='M5 50A45 45 0 0 1 50 5v45H5z' fill='%23f59e0b'/%3E%3C/svg%3E">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="description" content="Thick Lines - A minimalist whiteboard with four colors.">
+  <meta name="author" content="Bheb Developer">
+  <meta name="keywords" content="whiteboard, drawing, RGBY, online whiteboard">
+  <meta name="theme-color" content="#0f172a">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Thick Lines</title>
+  <!-- Preload critical resources -->
+  <link rel="preload" href="style.css" as="style">
+  <link rel="stylesheet" href="style.css">
+  <!-- Preconnect to external domains -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <!-- Favicon and fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css" integrity="sha512-xh6O/CkQoPOWDdYTDqeRdPCVd1SpvCA9XXcUnZS2FmJNp1coAFzvtCN9BmamE+4aHK8yyUHUSCcJHgXloTyT2A==" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%230f172a'/%3E%3Cpath d='M50 5A45 45 0 1 1 5 50 45 45 0 0 1 50 5m0-5a50 50 0 1 0 50 50A50 50 0 0 0 50 0z' fill='rgba(255,255,255,0.2)'/%3E%3Cpath d='M50 5A45 45 0 0 1 95 50H50V5z' fill='%23ef4444'/%3E%3Cpath d='M50 50h45A45 45 0 0 1 50 95V50z' fill='%2310b981'/%3E%3Cpath d='M50 95A45 45 0 0 1 5 50h45v45z' fill='%233b82f6'/%3E%3Cpath d='M5 50A45 45 0 0 1 50 5v45H5z' fill='%23f59e0b'/%3E%3C/svg%3E">
 </head>
-
 <body>
-    <div class="container">
-        <header>
-            <div class="header-left" onclick="location.reload();" aria-label="Reload Thick Lines">
-                Thick Lines
-            </div>
-            <div class="header-center">
-                <div class="color-section">
-                    <div class="color-buttons">
-                        <button class="color-btn red" data-color="#ef4444" title="Red (1)" data-shortcut="1" aria-label="Red color"></button>
-                        <button class="color-btn green" data-color="#10b981" title="Green (2)" data-shortcut="2" aria-label="Green color"></button>
-                        <button class="color-btn blue" data-color="#3b82f6" title="Blue (3)" data-shortcut="3" aria-label="Blue color"></button>
-                        <button class="color-btn yellow" data-color="#f59e0b" title="Yellow (4)" data-shortcut="4" aria-label="Yellow color"></button>
-                    </div>
-                </div>
-                <div class="toolbox">
-                    <div class="tool-container">
-                        <button id="penBtn" class="tool-btn" title="Drawing Pen (P)" aria-label="Pen tool">
-                            <i class="fas fa-pencil-alt" aria-hidden="true"></i> Pen <i class="fas fa-caret-down" aria-hidden="true"></i>
-                        </button>
-                        <div class="pen-size-dropdown">
-                            <div class="pen-size-option" data-size="2">2px</div>
-                            <div class="pen-size-option" data-size="5">5px</div>
-                            <div class="pen-size-option" data-size="10">10px</div>
-                            <div class="pen-size-option" data-size="20">20px</div>
-                            <div class="pen-size-option" data-size="30">30px</div>
-                            <div class="pen-size-option" data-size="50">50px</div>
-                        </div>
-                    </div>
-                    <div class="tool-container">
-                        <button id="eraserBtn" class="tool-btn" title="Eraser (E)" aria-label="Eraser tool">
-                            <i class="fas fa-eraser" aria-hidden="true"></i> Eraser <i class="fas fa-caret-down" aria-hidden="true"></i>
-                        </button>
-                        <div class="eraser-size-dropdown">
-                            <div class="eraser-size-option" data-size="2">2px</div>
-                            <div class="eraser-size-option" data-size="5">5px</div>
-                            <div class="eraser-size-option" data-size="10">10px</div>
-                            <div class="eraser-size-option" data-size="20">20px</div>
-                            <div class="eraser-size-option" data-size="30">30px</div>
-                            <div class="eraser-size-option" data-size="50">50px</div>
-                        </div>
-                    </div>
-                    <button id="undoBtn" title="Undo Last Action (Ctrl+Z)" aria-label="Undo"><i class="fas fa-undo" aria-hidden="true"></i></button>
-                    <button id="redoBtn" title="Redo Last Action (Ctrl+Y)" aria-label="Redo"><i class="fas fa-redo" aria-hidden="true"></i></button>
-                </div>
-            </div>
-            <div class="header-right">
-                <button id="clearBtn" title="Clear Canvas (Shift+Delete)" aria-label="Clear canvas"><i class="fas fa-trash" aria-hidden="true"></i> Clear</button>
-                <button id="exportBtn" title="Export as Image (Ctrl+S)" aria-label="Export canvas"><i class="fas fa-download" aria-hidden="true"></i> Export</button>
-                <button id="helpBtn" title="Keyboard Shortcuts (?)" aria-label="Show keyboard shortcuts"><i class="fas fa-keyboard" aria-hidden="true"></i></button>
-            </div>
-        </header>
-        
-        <main id="whiteboard">
-            <canvas id="drawing-canvas"></canvas>
-            <div class="canvas-overlay"></div>
-            <div class="size-visualizer" aria-hidden="true"></div>
-        </main>
-        
-        <div class="toast-container" aria-live="polite">
-            <!-- Toasts will be inserted here dynamically -->
+  <div class="container">
+    <header>
+      <button type="button" class="header-left" aria-label="Reload Thick Lines">Thick Lines</button>
+      <div class="header-center">
+        <div class="color-section">
+          <div class="color-buttons">
+            <button type="button" class="color-btn red" data-color="#ef4444" title="Red (1)" data-shortcut="1" aria-label="Red color"></button>
+            <button type="button" class="color-btn green" data-color="#10b981" title="Green (2)" data-shortcut="2" aria-label="Green color"></button>
+            <button type="button" class="color-btn blue" data-color="#3b82f6" title="Blue (3)" data-shortcut="3" aria-label="Blue color"></button>
+            <button type="button" class="color-btn yellow" data-color="#f59e0b" title="Yellow (4)" data-shortcut="4" aria-label="Yellow color"></button>
+          </div>
         </div>
-        
-        <!-- Help Panel -->
-        <aside class="help-panel" id="helpPanel" aria-label="Keyboard shortcuts" aria-hidden="true">
-            <button class="help-close" id="closeHelpBtn" aria-label="Close help panel"><i class="fas fa-times" aria-hidden="true"></i></button>
-            <h2>Keyboard Shortcuts</h2>
-            <div class="shortcut-list">
-                <div class="shortcut-key">1-4</div>
-                <div class="shortcut-desc">Select colors (Red, Green, Blue, Yellow)</div>
-                
-                <div class="shortcut-key">P</div>
-                <div class="shortcut-desc">Switch to Pen tool</div>
-                
-                <div class="shortcut-key">E</div>
-                <div class="shortcut-desc">Switch to Eraser tool</div>
-                
-                <div class="shortcut-key">Ctrl+Z</div>
-                <div class="shortcut-desc">Undo last action</div>
-                
-                <div class="shortcut-key">Ctrl+Y</div>
-                <div class="shortcut-desc">Redo last action</div>
-                
-                <div class="shortcut-key">Ctrl+S</div>
-                <div class="shortcut-desc">Export canvas as image</div>
-                
-                <div class="shortcut-key">Shift+Delete</div>
-                <div class="shortcut-desc">Clear canvas</div>
-                
-                <div class="shortcut-key">Middle Mouse + Drag</div>
-                <div class="shortcut-desc">Pan the canvas</div>
-                
-                <div class="shortcut-key">?</div>
-                <div class="shortcut-desc">Show/hide this help panel</div>
+        <div class="toolbox">
+          <div class="tool-container">
+            <button type="button" id="penBtn" class="tool-btn" title="Drawing Pen (P)" aria-label="Pen tool">
+              <i class="fas fa-pencil-alt" aria-hidden="true"></i> Pen <i class="fas fa-caret-down" aria-hidden="true"></i>
+            </button>
+            <div class="pen-size-dropdown">
+              <div class="pen-size-option" data-size="2">2px</div>
+              <div class="pen-size-option" data-size="5">5px</div>
+              <div class="pen-size-option" data-size="10">10px</div>
+              <div class="pen-size-option" data-size="20">20px</div>
+              <div class="pen-size-option" data-size="30">30px</div>
+              <div class="pen-size-option" data-size="50">50px</div>
             </div>
-        </aside>
-        
-        <!-- Context Menu -->
-        <div id="contextMenu" class="context-menu" aria-hidden="true">
-            <div class="context-menu-item" id="ctx-undo"><i class="fas fa-undo" aria-hidden="true"></i> Undo</div>
-            <div class="context-menu-item" id="ctx-redo"><i class="fas fa-redo" aria-hidden="true"></i> Redo</div>
-            <div class="context-menu-separator"></div>
-            <div class="context-menu-item" id="ctx-cut"><i class="fas fa-cut" aria-hidden="true"></i> Cut</div>
-            <div class="context-menu-item" id="ctx-copy"><i class="fas fa-copy" aria-hidden="true"></i> Copy</div>
-            <div class="context-menu-item" id="ctx-paste"><i class="fas fa-paste" aria-hidden="true"></i> Paste</div>
-            <div class="context-menu-separator"></div>
-            <div class="context-menu-item" id="ctx-clear"><i class="fas fa-trash" aria-hidden="true"></i> Clear All</div>
+          </div>
+          <div class="tool-container">
+            <button type="button" id="eraserBtn" class="tool-btn" title="Eraser (E)" aria-label="Eraser tool">
+              <i class="fas fa-eraser" aria-hidden="true"></i> Eraser <i class="fas fa-caret-down" aria-hidden="true"></i>
+            </button>
+            <div class="eraser-size-dropdown">
+              <div class="eraser-size-option" data-size="2">2px</div>
+              <div class="eraser-size-option" data-size="5">5px</div>
+              <div class="eraser-size-option" data-size="10">10px</div>
+              <div class="eraser-size-option" data-size="20">20px</div>
+              <div class="eraser-size-option" data-size="30">30px</div>
+              <div class="eraser-size-option" data-size="50">50px</div>
+            </div>
+          </div>
+          <button type="button" id="undoBtn" title="Undo Last Action (Ctrl+Z)" aria-label="Undo"><i class="fas fa-undo" aria-hidden="true"></i></button>
+          <button type="button" id="redoBtn" title="Redo Last Action (Ctrl+Y)" aria-label="Redo"><i class="fas fa-redo" aria-hidden="true"></i></button>
         </div>
-        
-        <!-- Loading Overlay -->
-        <div class="loading-overlay">
-            <div class="loading-spinner"></div>
-        </div>
+      </div>
+      <div class="header-right">
+        <button type="button" id="contrastBtn" title="Toggle High Contrast Mode" aria-label="Toggle high contrast mode"><i class="fas fa-adjust" aria-hidden="true"></i> Contrast</button>
+        <button type="button" id="clearBtn" title="Clear Canvas (Shift+Delete)" aria-label="Clear canvas"><i class="fas fa-trash" aria-hidden="true"></i> Clear</button>
+        <button type="button" id="exportBtn" title="Export as Image (Ctrl+S)" aria-label="Export canvas"><i class="fas fa-download" aria-hidden="true"></i> Export</button>
+        <button type="button" id="helpBtn" title="Keyboard Shortcuts (?)" aria-label="Show keyboard shortcuts"><i class="fas fa-keyboard" aria-hidden="true"></i></button>
+      </div>
+    </header>
+    <main id="whiteboard">
+      <canvas id="drawing-canvas" role="img" aria-label="Drawing canvas">
+        <p>Your browser does not support canvas. This application requires a modern browser with HTML5 Canvas support. Please use the keyboard shortcuts and on-screen controls to draw.</p>
+        <p>Alternative: Download a modern browser like Chrome, Firefox, or Safari to use this drawing application.</p>
+      </canvas>
+      <div class="canvas-overlay"></div>
+      <div class="size-visualizer" aria-hidden="true"></div>
+    </main>
+    <div class="toast-container" aria-live="polite">
+      <!-- Toasts will be inserted here dynamically -->
+    </div>
+    <!-- Help Panel -->
+    <aside class="help-panel" id="helpPanel" aria-label="Keyboard shortcuts" hidden>
+      <button type="button" class="help-close" id="closeHelpBtn" aria-label="Close help panel"><i class="fas fa-times" aria-hidden="true"></i></button>
+      <h2>Keyboard Shortcuts</h2>
+      <div class="shortcut-list">
+        <div class="shortcut-key">1-4</div>
+        <div class="shortcut-desc">Select colors (Red, Green, Blue, Yellow)</div>
+        <div class="shortcut-key">P</div>
+        <div class="shortcut-desc">Switch to Pen tool</div>
+        <div class="shortcut-key">E</div>
+        <div class="shortcut-desc">Switch to Eraser tool</div>
+        <div class="shortcut-key">Ctrl+Z</div>
+        <div class="shortcut-desc">Undo last action</div>
+        <div class="shortcut-key">Ctrl+Y</div>
+        <div class="shortcut-desc">Redo last action</div>
+        <div class="shortcut-key">Ctrl+S</div>
+        <div class="shortcut-desc">Export canvas as image</div>
+        <div class="shortcut-key">Shift+Delete</div>
+        <div class="shortcut-desc">Clear canvas</div>
+        <div class="shortcut-key">Middle Mouse + Drag</div>
+        <div class="shortcut-desc">Pan the canvas</div>
+        <div class="shortcut-key">?</div>
+        <div class="shortcut-desc">Show/hide this help panel</div>
+      </div>
+    </aside>
+    <!-- Context Menu -->
+    <div id="contextMenu" class="context-menu" aria-hidden="true">
+      <div class="context-menu-item" id="ctx-undo"><i class="fas fa-undo" aria-hidden="true"></i> Undo</div>
+      <div class="context-menu-item" id="ctx-redo"><i class="fas fa-redo" aria-hidden="true"></i> Redo</div>
+      <div class="context-menu-separator"></div>
+      <div class="context-menu-item" id="ctx-cut"><i class="fas fa-cut" aria-hidden="true"></i> Cut</div>
+      <div class="context-menu-item" id="ctx-copy"><i class="fas fa-copy" aria-hidden="true"></i> Copy</div>
+      <div class="context-menu-item" id="ctx-paste"><i class="fas fa-paste" aria-hidden="true"></i> Paste</div>
+      <div class="context-menu-separator"></div>
+      <div class="context-menu-item" id="ctx-clear"><i class="fas fa-trash" aria-hidden="true"></i> Clear All</div>
+    </div>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay">
+      <div class="loading-spinner"></div>
     </div>
 
-    <!-- Defer script loading to improve page loading performance -->
-    <script src="app.js" defer></script>
+    <!-- Themed Confirmation Modal -->
+    <div class="confirm-modal" id="confirmModal" role="dialog" aria-modal="true" aria-hidden="true" hidden>
+      <div class="confirm-modal-content">
+        <h3 id="confirmModalTitle">Confirm</h3>
+        <p id="confirmModalMessage">Are you sure?</p>
+        <div class="modal-actions">
+          <button type="button" id="confirmCancelBtn">Cancel</button>
+          <button type="button" id="confirmOkBtn" class="danger">Confirm</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Defer script loading to improve page loading performance -->
+  <script src="app.js" defer></script>
 </body>
-
 </html>

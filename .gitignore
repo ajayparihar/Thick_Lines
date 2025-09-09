@@ -1,0 +1,13 @@
+node_modules/
+coverage/
+dist/
+build/
+out/
+.cache/
+npm-debug.log*
+yarn-error.log
+pnpm-debug.log*
+.DS_Store
+.env
+.env.*
+AI-readymade prompts

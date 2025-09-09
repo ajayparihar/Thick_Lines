@@ -59,6 +59,13 @@
     --transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     --hover-lift: translateY(-2px);
     --active-scale: scale(0.98);
+    
+    /* High contrast mode variables */
+    --hc-bg-color: #000000;
+    --hc-text-color: #ffffff;
+    --hc-border-color: #ffffff;
+    --hc-button-bg: #1a1a1a;
+    --hc-button-hover: #333333;
 }
 
 /* Reset and base styles */
@@ -112,13 +119,13 @@ header {
     left: 0;
     right: 0;
     height: var(--header-height);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     background: var(--glass-bg);
     box-shadow: var(--shadow-md);
     z-index: 100;
     border-bottom: 1px solid var(--glass-border);
-    transition: all var(--transition-normal);
+    transition: background-color var(--transition-normal), border-color var(--transition-normal), box-shadow var(--transition-normal), backdrop-filter var(--transition-normal);
 }
 
 .header-left,
@@ -135,7 +142,7 @@ header {
     padding: 6px 12px;
     border-radius: var(--border-radius-md);
     color: #fff; /* white title */
-    transition: all var(--transition-normal);
+    transition: background-color var(--transition-normal), color var(--transition-normal), text-shadow var(--transition-normal);
     display: flex;
     align-items: center;
     letter-spacing: -0.5px;
@@ -147,8 +154,7 @@ header {
 body.minimal .header-left { display: flex; }
 
 .header-left:hover {
-    transform: translateY(-1px);
-    text-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    text-shadow: 0 3px 6px rgba(0, 0, 0, 0.12);
 }
 
 .header-center {
@@ -173,10 +179,11 @@ button {
     padding: 8px 14px;
     border-radius: var(--border-radius-md);
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: background-color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast), color var(--transition-fast);
     font-weight: 500;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    /* Reduce blur to keep text/icons crisp */
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     box-shadow: var(--shadow-sm);
     font-size: 0.95rem;
     display: inline-flex;
@@ -191,26 +198,14 @@ button {
 
 button:hover {
     background: var(--button-hover);
-    transform: var(--hover-lift);
     box-shadow: var(--shadow-md);
     border-color: rgba(255, 255, 255, 0.2);
 }
 
-button:hover::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0));
-    pointer-events: none;
-}
 
 button:active {
-    transform: var(--active-scale);
     box-shadow: var(--shadow-sm);
-    transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background-color 0.1s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.1s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 button.disabled {
@@ -256,7 +251,7 @@ button i {
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid var(--glass-border);
     box-shadow: var(--shadow-md);
-    transition: all var(--transition-normal);
+    transition: background-color var(--transition-normal), border-color var(--transition-normal), box-shadow var(--transition-normal);
 }
 
 .color-section {
@@ -266,7 +261,6 @@ button i {
 .color-section:hover,
 .toolbox:hover {
     box-shadow: var(--shadow-lg);
-    transform: translateY(-0.5px);
     border-color: rgba(255, 255, 255, 0.2);
 }
 
@@ -288,7 +282,7 @@ button i {
     border-radius: 50%;
     border: 2px solid rgba(255, 255, 255, 0.2);
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: box-shadow var(--transition-fast), border-color var(--transition-fast), opacity var(--transition-fast);
     position: relative;
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
@@ -302,14 +296,13 @@ button i {
     transform: translateX(-50%);
     font-size: 10px;
     color: var(--text-muted);
-    transition: all var(--transition-normal);
+    transition: opacity var(--transition-normal), bottom var(--transition-normal);
     opacity: 0;
 }
 
 .color-btn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 0 0 4px rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: var(--shadow-md);
+    border-color: rgba(255, 255, 255, 0.35);
 }
 
 .color-btn:hover::after {
@@ -324,16 +317,9 @@ button i {
 
 .color-btn.active {
     border: var(--active-color-border);
-    transform: scale(1.15);
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2), 0 0 10px rgba(255, 255, 255, 0.1);
-    animation: subtle-pulse 2s infinite ease-in-out;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
 }
 
-@keyframes subtle-pulse {
-    0% { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2), 0 0 0px rgba(255, 255, 255, 0.1); }
-    50% { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.25), 0 0 15px rgba(255, 255, 255, 0.25); }
-    100% { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2), 0 0 0px rgba(255, 255, 255, 0.1); }
-}
 
 .color-btn.red { background-color: var(--red-color); }
 .color-btn.green { background-color: var(--green-color); }
@@ -388,7 +374,7 @@ button i {
 .eraser-size-option {
     padding: 8px 15px;
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: background-color var(--transition-fast), border-left-color var(--transition-fast), padding-left var(--transition-fast);
     border-left: 3px solid transparent;
 }
 
@@ -453,10 +439,12 @@ button i {
 }
 
 .tool-btn.active {
+    /* Match color button selection visuals */
+    border: var(--active-color-border);
     background: rgba(59, 130, 246, 0.2);
     border-color: var(--primary-color);
     color: #fff;
-    font-weight: 500;
+    font-weight: 600;
     box-shadow: 0 0 0 1px var(--primary-color), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
 }
 
@@ -475,11 +463,20 @@ button i {
 
 .tool-btn .size-indicator {
     font-size: 0.8em;
-    opacity: 0.8;
-    background: rgba(0, 0, 0, 0.2);
-    padding: 2px 4px;
+    opacity: 0.9;
+    background: rgba(255, 255, 255, 0.15);
+    padding: 2px 6px;
     border-radius: var(--border-radius-sm);
     margin-left: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Make size indicator more prominent when the tool is active */
+.tool-btn.active .size-indicator {
+    background: rgba(255, 255, 255, 0.22);
+    border-color: rgba(255, 255, 255, 0.35);
+    color: #fff;
+    font-weight: 700;
 }
 
 /* Size visualizer */
@@ -497,13 +494,8 @@ button i {
 
 .size-visualizer.visible {
     opacity: 1;
-    animation: fade-pulse 1.5s infinite alternate ease-in-out;
 }
 
-@keyframes fade-pulse {
-    0% { box-shadow: 0 0 0px rgba(255, 255, 255, 0.15); }
-    100% { box-shadow: 0 0 15px rgba(255, 255, 255, 0.3); }
-}
 
 /* Scrollbar customization */
 ::-webkit-scrollbar {
@@ -539,19 +531,6 @@ button i {
     background: linear-gradient(45deg, rgba(59, 130, 246, 0.3), rgba(139, 92, 246, 0.3));
 }
 
-#exportBtn:hover::before {
-    content: '';
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    top: 0;
-    left: -100%;
-    background: linear-gradient(90deg,
-        rgba(255, 255, 255, 0),
-        rgba(255, 255, 255, 0.2),
-        rgba(255, 255, 255, 0));
-    animation: shine 1.5s ease-in-out;
-}
 
 @keyframes shine {
     to {
@@ -603,7 +582,7 @@ button i {
     display: flex;
     align-items: center;
     gap: 8px;
-    transition: all var(--transition-fast);
+    transition: background-color var(--transition-fast), border-left-color var(--transition-fast), padding-left var(--transition-fast);
     border-left: 3px solid transparent;
 }
 
@@ -641,7 +620,7 @@ button i {
     border-radius: var(--border-radius-lg);
     z-index: 200;
     padding: 25px;
-    transition: all var(--transition-slow);
+    transition: opacity var(--transition-slow), transform var(--transition-slow), visibility var(--transition-slow);
     box-shadow: var(--shadow-lg);
     overflow-y: auto;
     opacity: 0;
@@ -707,7 +686,6 @@ button i {
 
 .help-close:hover {
     background: var(--bg-color-lighter);
-    transform: rotate(90deg);
 }
 
 /* Toast notifications */
@@ -795,7 +773,7 @@ button i {
     padding: 8px 12px;
     border-radius: 8px;
     cursor: pointer;
-    transition: all var(--transition-normal);
+    transition: background-color var(--transition-normal), border-color var(--transition-normal), box-shadow var(--transition-normal), color var(--transition-normal);
     font-size: 0.9rem;
     display: flex;
     align-items: center;
@@ -967,6 +945,60 @@ button i {
     visibility: visible;
 }
 
+/* Themed confirmation modal */
+.confirm-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.97);
+    width: 380px;
+    max-width: 92vw;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius-lg);
+    z-index: 210; /* above help panel */
+    box-shadow: var(--shadow-lg);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-normal), transform var(--transition-normal), visibility var(--transition-normal);
+}
+
+.confirm-modal.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.confirm-modal-content {
+    padding: 20px 22px;
+}
+
+.confirm-modal-content h3 {
+    margin-bottom: 10px;
+    font-size: 1.1rem;
+}
+
+.confirm-modal-content p {
+    margin-bottom: 16px;
+    color: var(--text-muted);
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.modal-actions .danger {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.5);
+}
+
+.modal-actions .danger:hover {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: rgba(239, 68, 68, 0.7);
+}
+
 .loading-overlay.visible {
     opacity: 1;
     visibility: visible;
@@ -1008,33 +1040,6 @@ button i {
     }
 }
 
-/* Enhanced animations */
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes fadeOut {
-    from { opacity: 1; }
-    to { opacity: 0; }
-}
-
-@keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-    100% { transform: scale(1); }
-}
 
 
 /* Minimalist theme overrides */
@@ -1102,13 +1107,18 @@ body.minimal .tool-btn .size-indicator {
   right: 4px;
   font-size: 10px;
   line-height: 1;
-  padding: 1px 3px;
+  padding: 1px 4px;
   border-radius: 6px;
-  background: rgba(255,255,255,0.15);
-  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.16);
+  border: 1px solid rgba(255,255,255,0.22);
   color: var(--text-color);
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: -0.2px;
+}
+
+body.minimal .tool-btn.active .size-indicator {
+  background: rgba(255,255,255,0.28);
+  border-color: rgba(255,255,255,0.4);
 }
 
 /* Tweak color swatches spacing */
@@ -1145,6 +1155,76 @@ body.minimal .size-visualizer { box-shadow: none; border-width: 1px; }
 
 /* Add elegant hover effect for all clickable elements */
 .tool-btn:hover, .feature-btn:hover {
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.15);
-    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+/* High contrast mode support */
+body.high-contrast {
+    --bg-color: var(--hc-bg-color);
+    --bg-color-light: var(--hc-bg-color);
+    --bg-color-lighter: #333333;
+    --text-color: var(--hc-text-color);
+    --text-muted: #cccccc;
+    --border-color: var(--hc-border-color);
+    --glass-bg: var(--hc-button-bg);
+    --glass-border: var(--hc-border-color);
+    --button-bg: var(--hc-button-bg);
+    --button-hover: var(--hc-button-hover);
+    background-image: none;
+    background-color: var(--hc-bg-color);
+}
+
+body.high-contrast header {
+    background: var(--hc-button-bg);
+    border-bottom: 2px solid var(--hc-border-color);
+}
+
+body.high-contrast button {
+    border: 2px solid var(--hc-border-color);
+    background: var(--hc-button-bg);
+    color: var(--hc-text-color);
+}
+
+body.high-contrast button:hover {
+    background: var(--hc-button-hover);
+    border-color: var(--hc-text-color);
+}
+
+body.high-contrast .color-btn {
+    border: 3px solid var(--hc-border-color);
+}
+
+body.high-contrast .color-btn.active {
+    border: 4px solid var(--hc-text-color);
+    box-shadow: 0 0 0 2px var(--hc-border-color);
+}
+
+body.high-contrast .help-panel,
+body.high-contrast .context-menu,
+body.high-contrast .toast,
+body.high-contrast .pen-size-dropdown,
+body.high-contrast .eraser-size-dropdown {
+    background: var(--hc-button-bg);
+    border: 2px solid var(--hc-border-color);
+    color: var(--hc-text-color);
+}
+
+body.high-contrast #drawing-canvas {
+    border: 2px solid var(--hc-border-color);
+}
+
+/* Browser specific high contrast support */
+@media (prefers-contrast: high) {
+    body {
+        --bg-color: #000000;
+        --bg-color-light: #000000;
+        --text-color: #ffffff;
+        --border-color: #ffffff;
+        background-image: none;
+    }
+    
+    button, .color-btn {
+        border-width: 2px;
+        border-style: solid;
+    }
 }

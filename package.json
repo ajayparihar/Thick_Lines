@@ -1,0 +1,34 @@
+{
+  "name": "thick-lines",
+  "version": "1.0.0",
+  "description": "A minimalist web-based whiteboard application with four drawing colors",
+  "main": "index.html",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:unit": "jest test/unit",
+    "test:integration": "jest test/integration",
+    "test:performance": "jest test/performance",
+    "test:security": "jest test/security",
+    "serve": "npx serve .",
+    "validate": "html-validate index.html",
+    "lint:js": "eslint . --ext .js --max-warnings=0"
+  },
+  "keywords": ["whiteboard", "drawing", "canvas", "web-app"],
+  "author": "Bheb Developer",
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "@testing-library/jest-dom": "^6.1.4",
+    "@testing-library/dom": "^9.3.3",
+    "identity-obj-proxy": "^3.0.0",
+    "html-validate": "^8.7.0",
+    "eslint": "^8.54.0",
+    "serve": "^14.2.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
