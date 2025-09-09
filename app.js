@@ -922,8 +922,8 @@ function renderFrame() {
         ctx.fillStyle = getCanvasBackgroundColor();
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Draw the image
-        ctx.drawImage(img, 0, 0, canvas.width / (window.devicePixelRatio || 1), canvas.height / (window.devicePixelRatio || 1));
+        // Draw the image at native pixel size (do not divide by devicePixelRatio)
+        ctx.drawImage(img, 0, 0);
 
         // Add rulers and guides
         drawRulers();
@@ -1594,8 +1594,8 @@ function loadState(dataURL) {
       ctx.fillStyle = getCanvasBackgroundColor();
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Draw the image
-      ctx.drawImage(img, 0, 0, canvas.width / (window.devicePixelRatio || 1), canvas.height / (window.devicePixelRatio || 1));
+      // Draw the image at native pixel size (do not divide by devicePixelRatio)
+      ctx.drawImage(img, 0, 0);
       ctx.restore();
 
       // Draw rulers if needed
@@ -4081,10 +4081,8 @@ function refreshCanvas() {
       ctx.globalAlpha = layer.opacity;
       ctx.globalCompositeOperation = layer.blendMode;
       
-      const dpr = window.devicePixelRatio || 1;
-      ctx.drawImage(layer.canvas, 0, 0, 
-        layer.canvas.width / dpr, 
-        layer.canvas.height / dpr);
+      // Draw the layer at its native pixel size (already matches main canvas backing-store)
+      ctx.drawImage(layer.canvas, 0, 0);
       
       ctx.restore();
     }
