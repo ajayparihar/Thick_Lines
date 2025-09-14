@@ -4120,7 +4120,7 @@ function pasteSelection() {
               if (!item.types.includes('image/png')) {
                 imageType = item.types.find(type => type.startsWith('image/'));
               }
-item.getType(imageType)
+              item.getType(imageType)
               .then(blob => {
                 // Create an image from the blob
                 const img = new Image();
