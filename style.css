@@ -688,7 +688,7 @@ button i {
     background: var(--bg-color-lighter);
 }
 
-/* Toast notifications */
+/* Toast notifications - Complete interference-free solution */
 .toast-container {
     position: fixed;
     bottom: 20px;
@@ -698,6 +698,32 @@ button i {
     flex-direction: column;
     gap: 10px;
     max-width: 320px;
+    /* ✅ KEY FIXES: Prevent interference with canvas drawing */
+    pointer-events: none; /* Never interferes with clicks */
+    opacity: 0; /* Initially hidden */
+    visibility: hidden; /* Completely hidden when empty */
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+/* Show container only when it has visible toast children */
+.toast-container.has-toasts {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Force hide any toast that doesn't have the 'show' class */
+.toast:not(.show) {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+/* Ensure empty containers or containers with only text content are hidden */
+.toast-container:empty,
+.toast-container:not(.has-toasts) {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
 }
 
 .toast {
@@ -716,6 +742,8 @@ button i {
     -webkit-backdrop-filter: blur(10px);
     max-width: 100%;
     overflow: hidden;
+    /* ✅ Re-enable pointer events only on actual toasts */
+    pointer-events: auto;
 }
 
 .toast.show {
@@ -866,8 +894,11 @@ button i {
     .toast-container {
         left: 10px;
         right: 10px;
+        bottom: 30px; /* More space from bottom on mobile */
         transform: none;
         max-width: none;
+        /* ✅ Ensure no interference on mobile */
+        pointer-events: none;
     }
 
     .help-panel {

@@ -1,49 +1,204 @@
 /**
- * Thick Lines Drawing Application
- * A sophisticated HTML5 canvas-based drawing application with advanced features
- * including pressure sensitivity, layer system, touch support, and accessibility features.
+ * ================================================================================================
+ * THICK LINES DRAWING APPLICATION
+ * ================================================================================================
+ * 
+ * A sophisticated HTML5 canvas-based drawing application with advanced features including:
+ * - Pressure-sensitive drawing with variable brush sizes
+ * - Layer system with lock/unlock capabilities
+ * - Touch and pointer event support for mobile devices
+ * - Zoom and pan functionality with smooth animations
+ * - Undo/Redo system with memory management
+ * - Custom context menus and tooltips
+ * - Export functionality with PNG format
+ * - Accessibility features with keyboard navigation
+ * - Performance optimization with RAF throttling
+ * - Memory management and cleanup routines
+ * 
+ * ARCHITECTURE OVERVIEW:
+ * ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+ * │   Event Layer   │    │  Drawing Layer  │    │  Canvas Layer   │
+ * │ Mouse/Touch/Key │────│ Tools/Brushes   │────│ HTML5 Canvas    │
+ * │   Handlers      │    │ State Management│    │ Context 2D API  │
+ * └─────────────────┘    └─────────────────┘    └─────────────────┘
+ *         │                        │                        │
+ *         └────────────────────────┼────────────────────────┘
+ *                                  │
+ *                    ┌─────────────────┐
+ *                    │   UI Layer      │
+ *                    │ Toolbars/Panels │
+ *                    │ Toast Messages  │
+ *                    └─────────────────┘
+ * 
+ * KEY DESIGN PATTERNS:
+ * - Observer Pattern: Event-driven UI updates
+ * - Command Pattern: Undo/Redo functionality 
+ * - Strategy Pattern: Different drawing tools
+ * - Singleton Pattern: Global application state
  * 
  * @file app.js - Main application entry point and core functionality
  * @version 1.0.0
  * @author Thick Lines Development Team
- * @requires HTML5 Canvas API, ES6+ JavaScript support
+ * @requires HTML5 Canvas API, ES6+ JavaScript support, Modern browser with pointer events
+ * @license MIT
  */
 
-// Initialize the application when DOM is fully loaded
-// This ensures all DOM elements are available before setup begins
+// ================================================================================================
+// APPLICATION BOOTSTRAP
+// ================================================================================================
+
+/**
+ * Initialize the application when DOM content is fully loaded.
+ * This ensures all DOM elements are available before setup begins.
+ * The init() function handles complete application setup including canvas context,
+ * event listeners, UI components, and feature initialization.
+ */
 document.addEventListener('DOMContentLoaded', init);
 
-// Canvas setup and state management
-let canvas;
-let ctx;
-let isDrawing = false;
-let isPanning = false;
-let isMiddleMouseDown = false;
-let middleMouseStartX = 0;
-let middleMouseStartY = 0;
-let lastPanPoint = { x: 0, y: 0 };
-let currentColor = '#ef4444'; // Default to red
-let currentTool = 'pen';
-let eraserSize = 50; // Default eraser size (uniform grid)
-let penSize = 10; // Default pen size (uniform grid)
-let undoStack = [];
-let redoStack = [];
-let zoomLevel = 1.0; // Default zoom level
-let zoomIncrement = 0.1; // Zoom step size
-let panOffsetX = 0; // Pan offset X
-let panOffsetY = 0; // Pan offset Y
-let lastMouseX = 0;
-let lastMouseY = 0;
-let sizeVisualizer = null; // Element for visualizing pen/eraser size
-let contextMenu = null; // Context menu element
-let tooltip = null; // Tooltip element
-let copiedRegion = null; // Store copied canvas region
+// ================================================================================================
+// CORE CANVAS AND DRAWING STATE MANAGEMENT
+// ================================================================================================
 
-// Initiate drawing variables
+/**
+ * @typedef {HTMLCanvasElement} Canvas - The main drawing canvas element
+ * @typedef {CanvasRenderingContext2D} Context2D - The 2D rendering context for canvas operations
+ */
+
+/** @type {HTMLCanvasElement|null} Main drawing canvas element */
+let canvas;
+
+/** @type {CanvasRenderingContext2D|null} 2D rendering context for canvas drawing operations */
+let ctx;
+
+// ------------------------------------------------------------------------------------------------
+// DRAWING STATE FLAGS
+// These boolean flags track the current interaction state of the application
+// ------------------------------------------------------------------------------------------------
+
+/** @type {boolean} Indicates whether user is currently drawing/stroking */
+let isDrawing = false;
+
+/** @type {boolean} Indicates whether user is currently panning the canvas view */
+let isPanning = false;
+
+/** @type {boolean} Tracks middle mouse button state for click vs drag detection */
+let isMiddleMouseDown = false;
+
+// ------------------------------------------------------------------------------------------------
+// MOUSE AND INTERACTION COORDINATES
+// These variables track mouse/pointer positions for various interaction modes
+// ------------------------------------------------------------------------------------------------
+
+/** @type {number} X coordinate where middle mouse button was initially pressed */
+let middleMouseStartX = 0;
+
+/** @type {number} Y coordinate where middle mouse button was initially pressed */
+let middleMouseStartY = 0;
+
+/** @type {{x: number, y: number}} Last recorded pan point for calculating pan deltas */
+let lastPanPoint = { x: 0, y: 0 };
+
+/** @type {number} Last recorded mouse X position (client coordinates) for cursor guides */
+let lastMouseX = 0;
+
+/** @type {number} Last recorded mouse Y position (client coordinates) for cursor guides */
+let lastMouseY = 0;
+
+// ------------------------------------------------------------------------------------------------
+// DRAWING TOOL CONFIGURATION
+// These variables define the current drawing tool settings and appearance
+// ------------------------------------------------------------------------------------------------
+
+/** @type {string} Current drawing color in hex format (default: red) */
+let currentColor = '#ef4444';
+
+/** @type {'pen'|'eraser'} Currently active drawing tool */
+let currentTool = 'pen';
+
+/** @type {number} Eraser brush size in pixels (uniform circular brush) */
+let eraserSize = 50;
+
+/** @type {number} Pen brush size in pixels (pressure-sensitive when supported) */
+let penSize = 10;
+
+// ------------------------------------------------------------------------------------------------
+// UNDO/REDO SYSTEM
+// Canvas state management for undo/redo functionality using data URL snapshots
+// ------------------------------------------------------------------------------------------------
+
+/** @type {string[]} Stack of canvas states (PNG data URLs) for undo operations */
+let undoStack = [];
+
+/** @type {string[]} Stack of canvas states (PNG data URLs) for redo operations */
+let redoStack = [];
+
+// ------------------------------------------------------------------------------------------------
+// VIEWPORT TRANSFORMATION
+// Variables controlling zoom level and pan offsets for canvas navigation
+// ------------------------------------------------------------------------------------------------
+
+/** @type {number} Current zoom level (1.0 = 100%, 2.0 = 200%, etc.) */
+let zoomLevel = 1.0;
+
+/** @type {number} Zoom increment/decrement step size for zoom operations */
+let zoomIncrement = 0.1;
+
+/** @type {number} Horizontal pan offset in CSS pixels */
+let panOffsetX = 0;
+
+/** @type {number} Vertical pan offset in CSS pixels */
+let panOffsetY = 0;
+
+// ------------------------------------------------------------------------------------------------
+// UI ELEMENT REFERENCES
+// Cached references to frequently accessed DOM elements for performance
+// ------------------------------------------------------------------------------------------------
+
+/** @type {HTMLElement|null} Visual indicator showing current pen/eraser size */
+let sizeVisualizer = null;
+
+/** @type {HTMLElement|null} Custom context menu element */
+let contextMenu = null;
+
+/** @type {HTMLElement|null} Tooltip element for UI hints */
+let tooltip = null;
+
+/** @type {HTMLCanvasElement|null} Copied canvas region for paste operations */
+let copiedRegion = null;
+
+// ------------------------------------------------------------------------------------------------
+// DRAWING PATH SYSTEM
+// Vector-based path tracking for smooth drawing operations and performance optimization
+// ------------------------------------------------------------------------------------------------
+
+/**
+ * @typedef {Object} DrawingPoint
+ * @property {number} x - X coordinate in canvas space
+ * @property {number} y - Y coordinate in canvas space
+ * @property {number} t - Timestamp when point was recorded
+ * @property {number} pressure - Pressure value (0.0-1.0) if supported
+ */
+
+/**
+ * @typedef {Object} DrawingPath
+ * @property {'pen'|'eraser'} tool - Tool used for this path
+ * @property {string} color - Color used for this path (hex format)
+ * @property {number} size - Base size of the brush for this path
+ * @property {DrawingPoint[]} points - Array of points making up this path
+ * @property {number} lastWidth - Last calculated width (for pressure sensitivity)
+ * @property {number} layerIndex - Layer index where this path was drawn
+ */
+
+/** @type {DrawingPath[]} Collection of all drawing paths for the current session */
 let drawingPaths = [];
+
+/** @type {DrawingPath|null} Currently active path being drawn */
 let currentPath = null;
+
+/** @type {boolean} Flag to prevent multiple requestAnimationFrame calls */
 let animationFrameRequested = false;
-// Expose flag for test environments
+
+// Expose animation frame flag for test environments to verify performance optimizations
 try {
   if (typeof globalThis !== 'undefined') {
     Object.defineProperty(globalThis, 'animationFrameRequested', {
@@ -53,20 +208,48 @@ try {
   }
 } catch (_) {}
 
-// DOM element cache
+// ------------------------------------------------------------------------------------------------
+// DOM ELEMENT CACHE
+// Centralized cache for frequently accessed DOM elements to improve performance
+// ------------------------------------------------------------------------------------------------
+
+/**
+ * @typedef {Object} DOMElements
+ * @property {HTMLElement|null} sizeVisualizer - Visual indicator for brush size preview
+ * @property {HTMLElement|null} contextMenu - Custom right-click context menu
+ * @property {HTMLElement|null} tooltip - Dynamic tooltip element for UI hints
+ */
+
+/** @type {DOMElements} Cached DOM element references for performance optimization */
 let domElements = {
   sizeVisualizer: null,
   contextMenu: null,
   tooltip: null
 };
 
-// Constants
+// ================================================================================================
+// SYSTEM CONSTANTS AND DEFAULT VALUES
+// ================================================================================================
+
+/** @const {string} Default drawing color (red) */
 const DEFAULT_COLOR = '#ef4444';
+
+/** @const {number} Default eraser size in pixels */
 const DEFAULT_ERASER_SIZE = 50;
+
+/** @const {number} Default pen size in pixels */
 const DEFAULT_PEN_SIZE = 10;
+
+/** @const {number} Default zoom level (100%) */
 const DEFAULT_ZOOM = 1.0;
+
+/** @const {number} Zoom step size for zoom in/out operations */
 const ZOOM_INCREMENT = 0.1;
+
+/** @const {string} Canvas background color (dark slate) */
 const CANVAS_BG_COLOR = '#1e293b';
+
+/** @const {number} Maximum number of undo states to keep in memory */
 const UNDO_STACK_LIMIT = 30;
 
 // Debug and logging utilities
@@ -115,61 +298,119 @@ const logger = {
 // Feature flags
 const ENABLE_MIDDLE_CLICK_OPEN = false; // Gate opening new tab on middle-click
 
-// Flag to track if the app has been initialized
+// ================================================================================================
+// APPLICATION STATE AND FEATURE FLAGS
+// ================================================================================================
+
+/** @type {boolean} Tracks whether the application has completed initialization */
 let appInitialized = false;
 
-// Global variable to control ruler visibility
+/** @type {boolean} Controls visibility of measurement rulers on canvas edges */
 let showRulers = false;
 
-// Performance monitoring
+// ------------------------------------------------------------------------------------------------
+// PERFORMANCE MONITORING
+// Real-time performance tracking for optimization and debugging
+// ------------------------------------------------------------------------------------------------
+
+/** @type {number} Counter for rendered frames (FPS calculation) */
 let frameCount = 0;
+
+/** @type {number} Timestamp of last FPS calculation */
 let lastFpsTime = performance.now();
+
+/** @type {number} Current frames per second */
 let currentFps = 60;
+
+/** @type {HTMLElement|null} DOM element displaying FPS information */
 let fpsDisplay = null;
 
-// Harden performance.now against hostile test environments that override Date
+/**
+ * PERFORMANCE HARDENING: Protect performance.now() against test environment interference.
+ * Some test frameworks may override Date or performance APIs, causing timing issues.
+ * This IIFE ensures a stable high-resolution timer is always available.
+ */
 (function ensureSafePerformanceNow() {
   try {
     if (typeof window !== 'undefined' && window.performance && typeof window.performance.now === 'function') {
+      // Store original performance.now function to prevent overrides
       const origNow = window.performance.now.bind(window.performance);
       window.performance.now = function() {
         try {
           const v = origNow();
           if (typeof v === 'number' && !Number.isNaN(v)) return v;
         } catch (_) {}
-        // Fallback using high-resolution timer if available
+        // Fallback using Node.js high-resolution timer if available (test environments)
         try {
           if (typeof process !== 'undefined' && process.hrtime && process.hrtime.bigint) {
             return Number(process.hrtime.bigint() / 1000000n);
           }
         } catch (_) {}
-        return 0;
+        return 0; // Last resort fallback
       };
     }
-  } catch (_) {}
+  } catch (_) {} // Silently ignore initialization failures
 })();
 
-// Keyboard navigation state
+// ------------------------------------------------------------------------------------------------
+// ACCESSIBILITY AND INPUT FEATURES
+// Support for keyboard navigation and assistive technologies
+// ------------------------------------------------------------------------------------------------
+
+/** @type {number} X coordinate of keyboard-controlled cursor */
 let keyboardCursorX = 0;
+
+/** @type {number} Y coordinate of keyboard-controlled cursor */
 let keyboardCursorY = 0;
+
+/** @type {boolean} Whether keyboard navigation mode is active */
 let keyboardNavigationEnabled = false;
 
-// High contrast mode
+/** @type {boolean} Whether high contrast mode is enabled for better visibility */
 let highContrastMode = false;
 
+// ------------------------------------------------------------------------------------------------
+// TOUCH AND POINTER EVENT SUPPORT
+// Multi-touch gesture recognition and pointer event handling
+// ------------------------------------------------------------------------------------------------
 
-// Touch and pointer event state
+/** @type {number} Timestamp when touch interaction began (for gesture detection) */
 let touchStartTime = 0;
+
+/** @type {number} Previous distance between touch points (for pinch-zoom detection) */
 let lastTouchDistance = 0;
+
+/** @type {{x: number, y: number}} Center point of pinch-zoom gesture */
 let touchZoomCenter = { x: 0, y: 0 };
+
+/** @type {Map<number, PointerEvent>} Active pointer events by identifier */
 let activePointers = new Map();
+
+/** @type {number[]} Touch identifiers for multi-touch tracking */
 let touchIdentifiers = [];
+
+/** @type {{x: number, y: number}|null} Last touch pan position */
 let lastTouchPanPoint = null;
-let touchPanThreshold = 10; // px
+
+/** @type {number} Minimum movement threshold for pan gesture recognition (pixels) */
+let touchPanThreshold = 10;
+
+/** @type {boolean} Browser support for modern pointer events */
 let supportsPointerEvents = 'PointerEvent' in window;
+
+/** @type {boolean} Browser support for touch events */
 let supportsTouchEvents = 'TouchEvent' in window;
 
-// Test-mode detection (Jest)
+// ------------------------------------------------------------------------------------------------
+// TEST ENVIRONMENT DETECTION
+// Detect Jest or other testing frameworks to modify behavior appropriately
+// ------------------------------------------------------------------------------------------------
+
+/**
+ * @const {boolean} TEST_MODE - Detects if running in a test environment
+ * Used to disable certain features (like layers) that are difficult to test
+ * or to enable test-specific code paths.
+ */
 const TEST_MODE = (function() {
   try {
     return (typeof process !== 'undefined' && process.env && process.env.JEST_WORKER_ID) ||
@@ -177,34 +418,121 @@ const TEST_MODE = (function() {
   } catch (_) { return false; }
 })();
 
-// Advanced drawing features
-let currentPressure = 0.5; // Default pressure for non-pressure devices
-let supportsPressure = false;
-let pressureSmoothing = 0.3; // Smoothing factor for pressure changes
-let lastPressure = 0.5;
-let minPressureWidth = 0.1; // Minimum width multiplier
-let maxPressureWidth = 2.0; // Maximum width multiplier
+// ================================================================================================
+// ADVANCED DRAWING FEATURES
+// ================================================================================================
 
-// Layer system
+// ------------------------------------------------------------------------------------------------
+// PRESSURE SENSITIVITY
+// Support for pressure-sensitive input devices like styluses and graphics tablets
+// ------------------------------------------------------------------------------------------------
+
+/** @type {number} Current pressure value (0.0-1.0, 0.5 default for non-pressure devices) */
+let currentPressure = 0.5;
+
+/** @type {boolean} Whether the current input device supports pressure sensitivity */
+let supportsPressure = false;
+
+/** @type {number} Smoothing factor for pressure transitions (0.0-1.0, higher = more smoothing) */
+let pressureSmoothing = 0.3;
+
+/** @type {number} Previous pressure value for smooth interpolation */
+let lastPressure = 0.5;
+
+/** @type {number} Minimum brush width multiplier when pressure is minimal */
+let minPressureWidth = 0.1;
+
+/** @type {number} Maximum brush width multiplier when pressure is maximal */
+let maxPressureWidth = 2.0;
+
+// ------------------------------------------------------------------------------------------------
+// LAYER SYSTEM
+// Multiple drawing layers with independent visibility and locking
+// ------------------------------------------------------------------------------------------------
+
+/**
+ * @typedef {Object} DrawingLayer
+ * @property {HTMLCanvasElement} canvas - Layer's backing canvas
+ * @property {CanvasRenderingContext2D} ctx - Layer's 2D context
+ * @property {boolean} visible - Whether layer is visible
+ * @property {boolean} locked - Whether layer accepts new drawing
+ * @property {string} name - Human-readable layer name
+ * @property {number} opacity - Layer opacity (0.0-1.0)
+ */
+
+/** @type {DrawingLayer[]} Array of drawing layers */
 let layers = [];
+
+/** @type {number} Index of currently active drawing layer */
 let currentLayerIndex = 0;
+
+/** @type {number} Counter for generating unique layer names */
 let layerCounter = 1;
+
+/** @type {boolean} Global visibility toggle for layer system */
 let layersVisible = true;
 
-// Selection system
+// ------------------------------------------------------------------------------------------------
+// SELECTION SYSTEM
+// Rectangular selection and region manipulation tools
+// ------------------------------------------------------------------------------------------------
+
+/** @type {boolean} Whether selection mode is currently active */
 let selectionMode = false;
+
+/** @type {{x: number, y: number}|null} Starting point of current selection */
 let selectionStart = null;
+
+/** @type {{x: number, y: number}|null} Ending point of current selection */
 let selectionEnd = null;
+
+/** @type {ImageData|null} Selected region's pixel data */
 let selectedRegion = null;
+
+/** @type {HTMLCanvasElement|null} Canvas for selection overlay visualization */
 let selectionCanvas = null;
+
+/** @type {CanvasRenderingContext2D|null} Context for selection overlay */
 let selectionCtx = null;
 
-// Command pattern for undo/redo
+// ------------------------------------------------------------------------------------------------
+// COMMAND PATTERN FOR ADVANCED UNDO/REDO
+// More sophisticated undo/redo system supporting complex operations
+// ------------------------------------------------------------------------------------------------
+
+/**
+ * @typedef {Object} Command
+ * @property {Function} execute - Function to perform the command
+ * @property {Function} undo - Function to reverse the command
+ * @property {string} type - Human-readable command type
+ * @property {*} data - Command-specific data payload
+ */
+
+/** @type {Command[]} History of executed commands for advanced undo/redo */
 let commandHistory = [];
+
+/** @type {number} Current position in command history (-1 = no commands) */
 let currentCommandIndex = -1;
+
+/** @const {number} Maximum number of commands to keep in history */
 const MAX_COMMANDS = 50;
 
-// Debounce function for performance optimization
+
+// ================================================================================================
+// UTILITY FUNCTIONS
+// ================================================================================================
+
+/**
+ * Creates a debounced version of a function that delays execution until after the specified wait time.
+ * Useful for performance optimization by reducing the frequency of expensive operations like resize handling.
+ * 
+ * @param {Function} func - The function to debounce
+ * @param {number} wait - The number of milliseconds to delay execution
+ * @returns {Function} Debounced version of the function
+ * @example
+ * const debouncedResize = debounce(() => { resizeCanvas(); }, 250);
+ * window.addEventListener('resize', debouncedResize);
+ */
 function debounce(func, wait) {
   let timeout;
   return function(...args) {
@@ -214,7 +542,16 @@ function debounce(func, wait) {
   };
 }
 
-// Throttle function to limit how often a function can be called
+/**
+ * Creates a throttled version of a function that limits execution frequency.
+ * Ensures the function can only be called once per specified time limit.
+ * 
+ * @param {Function} func - The function to throttle
+ * @param {number} limit - The minimum time (ms) between function calls
+ * @returns {Function} Throttled version of the function
+ * @example
+ * const throttledMouseMove = throttle(handleMouseMove, 16); // ~60fps
+ */
 function throttle(func, limit) {
   let inThrottle;
   return function(...args) {
@@ -227,7 +564,11 @@ function throttle(func, limit) {
   };
 }
 
-// Create tooltip element if it doesn't exist
+/**
+ * Creates a tooltip element and appends it to the document body if one doesn't exist.
+ * 
+ * @returns {HTMLElement} The tooltip element
+ */
 function createTooltip() {
   const tooltip = document.createElement('div');
   tooltip.className = 'tooltip';
@@ -235,14 +576,64 @@ function createTooltip() {
   return tooltip;
 }
 
-// Initialize the canvas
 /**
- * Initialize the drawing application and core systems.
- * - Obtains the 2D canvas context, sizes the canvas respecting device pixel ratio
- * - Caches DOM references, sets up event listeners and UI controls
- * - Initializes layers, selection overlay, and pressure support
- * Errors are logged and a non-blocking toast is shown.
- * Returns: void
+ * Calculates a reasonable click vs drag threshold that adapts to current zoom level and device pixel ratio.
+ * This prevents accidental drag detection on high-DPI displays or when zoomed in significantly.
+ * 
+ * @returns {number} Pixel threshold for distinguishing clicks from drags
+ */
+function calcClickMoveThreshold() {
+  const dpr = Number((typeof window !== 'undefined' && window.devicePixelRatio) || 1) || 1;
+  const base = 5; // Base threshold at zoom=1.0, dpr=1.0
+  let z = 1;
+  
+  // Get current zoom level safely
+  try {
+    const g = (typeof globalThis !== 'undefined') ? Number(globalThis.zoomLevel) : NaN;
+    const local = Number(zoomLevel);
+    z = (Number.isFinite(g) && g > 0) ? g : ((Number.isFinite(local) && local > 0) ? local : 1);
+  } catch (_) {
+    z = (Number.isFinite(zoomLevel) && zoomLevel > 0) ? zoomLevel : 1;
+  }
+  
+  let threshold = Math.ceil(base * z * dpr);
+  if (z >= 5) threshold += 1; // Extra tolerance at high zoom levels
+  return Math.max(3, threshold); // Minimum threshold of 3 pixels
+}
+
+// ================================================================================================
+// CORE APPLICATION INITIALIZATION
+// ================================================================================================
+
+/**
+ * Initialize the drawing application and all core systems.
+ * 
+ * This is the main entry point that orchestrates the complete application setup:
+ * 
+ * INITIALIZATION SEQUENCE:
+ * 1. Canvas Setup: Acquires canvas element and 2D context with optimal settings
+ * 2. Device Adaptation: Configures canvas for device pixel ratio (HiDPI support)
+ * 3. DOM Caching: Caches frequently accessed elements for performance
+ * 4. Event System: Wires up all mouse, touch, keyboard, and window event handlers
+ * 5. UI Components: Initializes toolbars, dropdowns, modals, and context menus
+ * 6. Advanced Features: Sets up layers, selection system, and pressure sensitivity
+ * 7. State Management: Initializes undo/redo system with blank canvas state
+ * 
+ * CANVAS CONTEXT CONFIGURATION:
+ * - alpha: true (required for eraser transparency effects)
+ * - desynchronized: true (performance hint for smooth drawing)
+ * 
+ * ERROR HANDLING:
+ * All initialization steps are wrapped in try-catch blocks. Critical failures
+ * (canvas/context unavailable) abort initialization with error logging.
+ * Non-critical failures are logged but don't prevent app startup.
+ * 
+ * TEST COMPATIBILITY:
+ * The function detects test environments and adjusts behavior accordingly,
+ * such as skipping layer initialization which is complex to mock.
+ * 
+ * @throws {Error} When canvas element is not found or context creation fails
+ * @returns {void}
  */
 function init() {
   // Always attempt to (re)initialize in tests; log when already initialized
@@ -253,6 +644,9 @@ function init() {
   appInitialized = false;
 
   console.log('Starting app initialization...');
+
+  // Clean up any existing toast elements to ensure clean state
+  cleanupToasts();
 
   // Setup canvas with context optimization
   canvas = document.getElementById('drawing-canvas');
@@ -495,6 +889,47 @@ function trimUndoRedoStacks() {
   }
 
   console.log('Memory cleanup performed');
+}
+
+/**
+ * Clean up any existing toast elements and reset container state.
+ * Ensures a clean slate for toast notifications.
+ */
+function cleanupToasts() {
+  // Use regular DOM methods since this runs early in initialization
+  const container = document.querySelector ? document.querySelector('.toast-container') : null;
+  if (!container) return;
+  
+  // Remove all existing toast elements
+  const existingToasts = document.querySelectorAll ? document.querySelectorAll('.toast') : [];
+  existingToasts.forEach(toast => {
+    try {
+      if (toast.parentNode) {
+        toast.parentNode.removeChild(toast);
+      }
+    } catch (_) {}
+  });
+  
+  // Aggressive cleanup: Remove any remaining content including text nodes
+  try {
+    // Clear innerHTML to remove any persistent content
+    container.innerHTML = '';
+    
+    // Remove all CSS classes to reset state completely
+    container.className = 'toast-container';
+    
+    // Force hide the container
+    container.style.opacity = '0';
+    container.style.visibility = 'hidden';
+    container.style.pointerEvents = 'none';
+    
+    // Remove has-toasts class if present
+    if (container.classList && container.classList.remove) {
+      container.classList.remove('has-toasts');
+    }
+  } catch (_) {}
+  
+  console.log('Toast container cleaned up completely');
 }
 
 /**
@@ -1295,40 +1730,75 @@ function stopDrawing() {
   }
 }
 
-// Handle touch start
+/**
+ * TOUCH START HANDLER: Initiates drawing or panning based on touch count.
+ * 
+ * TOUCH GESTURE RECOGNITION:
+ * ┌───────────────────────────────────────┐
+ * │  SINGLE TOUCH    │  TWO FINGERS  │  THREE+ FINGERS │
+ * │ (Drawing Mode)   │ (Pan/Navigate) │  (No Action)    │
+ * ├──────────────────├───────────────├──────────────────┤
+ * │ • Start pen/eraser  │ • Stop drawing  │ • Ignore touches  │
+ * │ • Track pressure   │ • Pan midpoint   │ • Reset states    │
+ * │ • Begin stroke     │ • Smooth motion  │                  │
+ * └──────────────────┴───────────────┴──────────────────┘
+ * 
+ * SYNTHETIC EVENT CREATION:
+ * For two-finger panning, we create a synthetic mouse event using the midpoint
+ * of the two touch points. This allows reuse of existing pan logic.
+ * 
+ * ERROR HANDLING:
+ * Robust error recovery ensures touch interactions don't leave the app in 
+ * inconsistent states (stuck in drawing mode, cursor issues, etc.)
+ * 
+ * @param {TouchEvent} e - Touch event with touches array
+ * @returns {void}
+ */
 function handleTouchStart(e) {
   try {
-    e.preventDefault(); // Prevent default to avoid scrolling
+    // CRITICAL: Prevent default touch behaviors
+    // - Prevents page scrolling during drawing
+    // - Stops browser's built-in gesture recognition
+    // - Enables custom touch handling
+    e.preventDefault();
 
     if (e.touches.length === 1) {
-      // Single touch = drawing
+      // SINGLE TOUCH: Drawing mode
+      // Treat like a mouse down event for drawing
       startDrawing(e.touches[0]);
+      
     } else if (e.touches.length === 2) {
-      // Two fingers = panning
+      // TWO FINGERS: Panning mode
+      // Immediately stop any active drawing to prevent conflicts
       isDrawing = false;
-      stopDrawing(); // Make sure any drawing is stopped
+      stopDrawing();
 
-      // Calculate the midpoint between the two touches
+      // Calculate midpoint between the two touch points
+      // This creates a smooth panning experience by using the gesture center
       const touch1 = e.touches[0];
       const touch2 = e.touches[1];
       const midX = (touch1.clientX + touch2.clientX) / 2;
       const midY = (touch1.clientY + touch2.clientY) / 2;
 
-      // Create a synthetic event for panning
+      // Create synthetic mouse event for pan system
+      // This allows reuse of existing mouse-based pan logic
       const syntheticEvent = {
         clientX: midX,
         clientY: midY,
-        preventDefault: () => {}
+        preventDefault: () => {} // No-op to satisfy event interface
       };
 
       startCanvasPan(syntheticEvent);
     }
+    // Note: 3+ fingers are ignored to avoid complex gesture conflicts
+    
   } catch (error) {
     console.error('Error in touch start handler:', error);
-    // Reset states to avoid getting stuck
+    // DEFENSIVE RECOVERY: Reset all interaction states
+    // Prevents getting stuck in invalid states that could break the app
     isDrawing = false;
     isPanning = false;
-    updateCursor();
+    updateCursor(); // Ensure cursor reflects correct state
   }
 }
 
@@ -1395,11 +1865,52 @@ function handleTouchEnd(e) {
   }
 }
 
-// Get coordinates from mouse or touch event
 /**
- * Convert a client-space input event to canvas-space coordinates, accounting for pan/zoom.
- * @param {MouseEvent|Touch|PointerEvent} e - Event containing clientX/clientY or touches.
- * @returns {{x:number, y:number}} Canvas-space coordinates.
+ * COORDINATE TRANSFORMATION: Convert client-space input events to canvas drawing coordinates.
+ * 
+ * This function handles the complex coordinate transformation pipeline required for accurate
+ * drawing on a zoomable, pannable, high-DPI canvas:
+ * 
+ * TRANSFORMATION PIPELINE:
+ * ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────────┐    ┌──────────────────────┐
+ * │ Client/Viewport │───▶│ Canvas-relative  │───▶│  Zoom/Pan Adjusted  │───▶│ Backing-store Pixels │
+ * │   Coordinates   │    │  CSS Coordinates │    │   CSS Coordinates   │    │  (Drawing Target)    │
+ * └─────────────────┘    └──────────────────┘    └─────────────────────┘    └──────────────────────┘
+ *        ↓                        ↓                         ↓                          ↓
+ *   (e.clientX/Y)           (x - rect.left)         ((x - panX) / zoom)      (x * devicePixelRatio)
+ * 
+ * COORDINATE SPACES EXPLAINED:
+ * 
+ * 1. CLIENT COORDINATES (e.clientX, e.clientY)
+ *    - Raw browser event coordinates relative to viewport
+ *    - Unaffected by CSS transforms or canvas scaling
+ * 
+ * 2. CANVAS-RELATIVE CSS COORDINATES
+ *    - Coordinates relative to canvas element's top-left corner
+ *    - Still in CSS pixel units (affected by browser zoom)
+ * 
+ * 3. ZOOM/PAN ADJUSTED COORDINATES
+ *    - Accounts for user's zoom and pan transformations
+ *    - Represents the "logical" drawing position
+ * 
+ * 4. BACKING-STORE PIXELS
+ *    - Final coordinates for actual canvas drawing operations
+ *    - Scaled by devicePixelRatio for sharp rendering on high-DPI displays
+ * 
+ * MATHEMATICAL TRANSFORMATIONS:
+ * - Pan compensation: (coord - panOffset) / zoomLevel
+ * - HiDPI scaling: coord * (canvas.width / canvas.offsetWidth)
+ * 
+ * @param {MouseEvent|Touch|PointerEvent} e - Input event with client coordinates
+ * @returns {{x: number, y: number}} Canvas backing-store coordinates for drawing
+ * 
+ * @example
+ * // Mouse click at client coordinates (100, 50)
+ * // Canvas is at (20, 10), zoomed 2x, panned (30, 20)
+ * // Canvas: 800x600 backing pixels, 400x300 CSS pixels (2x DPI)
+ * 
+ * const coords = getCoordinates(mouseEvent);
+ * // Result: {x: 140, y: 60} (backing-store coordinates)
  */
 function getCoordinates(e) {
   try {
@@ -1408,51 +1919,62 @@ function getCoordinates(e) {
       return { x: 0, y: 0 };
     }
 
+    // Get canvas position and size in the viewport
     const rect = canvas.getBoundingClientRect();
     let clientX, clientY;
 
-    // Get client coordinates from mouse or touch event
+    // STEP 1: Extract client coordinates from event
+    // Handle both mouse and touch events uniformly
     if (e.touches && e.touches.length > 0) {
-      // Touch event
+      // Touch event - use first touch point
       clientX = e.touches[0].clientX;
       clientY = e.touches[0].clientY;
       console.log(`Touch coordinates: clientX=${clientX}, clientY=${clientY}`);
     } else {
-      // Mouse event
+      // Mouse or pointer event
       clientX = e.clientX;
       clientY = e.clientY;
       console.log(`Mouse coordinates: clientX=${clientX}, clientY=${clientY}`);
     }
 
-    // Canvas-space coordinates in CSS pixels
+    // STEP 2: Convert to canvas-relative CSS coordinates
+    // Subtract canvas position to get coordinates relative to canvas element
     let xCss = clientX - rect.left;
     let yCss = clientY - rect.top;
 
     console.log(`Canvas relative CSS coordinates before transform: x=${xCss}, y=${yCss}`);
     console.log(`Current transform: zoom=${zoomLevel}, panX=${panOffsetX}, panY=${panOffsetY}`);
 
-    // Adjust for current zoom and pan (still in CSS pixels)
+    // STEP 3: Apply zoom and pan transformation
+    // This converts CSS coordinates to logical drawing coordinates
+    // Formula: (cssCoord - panOffset) / zoomLevel
     let x = (xCss - panOffsetX) / zoomLevel;
     let y = (yCss - panOffsetY) / zoomLevel;
 
-    // Convert to backing-store pixels so drawn point aligns under cursor on HiDPI
+    // STEP 4: Scale to backing-store pixels for HiDPI displays
+    // Canvas backing store may be larger than CSS size for crisp rendering
     const backingWidth = (typeof canvas.width === 'number' && isFinite(canvas.width)) ? canvas.width : rect.width;
     const backingHeight = (typeof canvas.height === 'number' && isFinite(canvas.height)) ? canvas.height : rect.height;
+    
+    // Calculate scale factors (typically equals devicePixelRatio)
     const scaleX = rect.width > 0 ? (backingWidth / rect.width) : 1;
     const scaleY = rect.height > 0 ? (backingHeight / rect.height) : 1;
+    
+    // Apply scaling to get final drawing coordinates
     x *= scaleX;
     y *= scaleY;
 
     console.log(`Final drawing coordinates (backing pixels): x=${x}, y=${y} (scaleX=${scaleX}, scaleY=${scaleY})`);
 
-    // Update last mouse position for cursor guides (keep as client/CSS pixels)
+    // Update global mouse position tracking for cursor guides
+    // Keep in client coordinates for consistent overlay positioning
     lastMouseX = clientX;
     lastMouseY = clientY;
 
     return { x, y };
   } catch (error) {
     console.error('Error in getCoordinates:', error);
-    return { x: 0, y: 0 }; // Return default coordinates on error
+    return { x: 0, y: 0 }; // Fail gracefully with origin coordinates
   }
 }
 
@@ -1488,39 +2010,98 @@ function clientToCanvas(clientX, clientY) {
   return { x, y };
 }
 
-// Save the current state for undo/redo
 /**
- * Snapshot the current composited canvas into a PNG data URL and push to the undo stack.
- * Trims history to UNDO_STACK_LIMIT and clears the redo stack.
+ * CANVAS STATE MANAGEMENT: Save current drawing state for undo/redo system.
+ * 
+ * UNDO/REDO ARCHITECTURE:
+ * ┌──────────────────────────────────────────────────────────────────────┐
+ * │                        UNDO STACK                        REDO STACK          │
+ * │  ┌────────────────────────────────┐  ┌──────────────────┐  │
+ * │  │ State N-2 (oldest)           │  │ Future State 1 │  │
+ * │  │ State N-1                    │  │ Future State 2 │  │
+ * │  │ State N   (current) ←──────┐  └──────────────────┘  │
+ * │  └────────────────────────────────┘                   │
+ * │                                                                    │
+ * │  MEMORY MANAGEMENT STRATEGIES:                                      │
+ * │  • PNG compression reduces memory footprint                        │
+ * │  • Stack size limited to UNDO_STACK_LIMIT (30 states)             │
+ * │  • Proactive cleanup when document hidden                          │
+ * │  • Oldest states discarded when limit exceeded                    │
+ * └──────────────────────────────────────────────────────────────────────┘
+ * 
+ * STATE REPRESENTATION:
+ * Each state is stored as a PNG data URL containing the complete canvas bitmap.
+ * PNG format is used because:
+ * - Preserves transparency (essential for eraser functionality)
+ * - Lossless compression reduces memory usage
+ * - Native browser support for encoding/decoding
+ * - Compatible with canvas.toDataURL() and Image.src
+ * 
+ * MEMORY OPTIMIZATION:
+ * - Automatic stack trimming when size exceeds UNDO_STACK_LIMIT
+ * - Proactive cleanup scheduled when tab becomes hidden
+ * - Redo stack cleared on new operations (standard undo behavior)
+ * - PNG compression typically achieves 10-50% size reduction vs raw pixels
+ * 
+ * OPERATION FLOW:
+ * 1. Serialize current canvas to PNG data URL
+ * 2. Push to undo stack, clear redo stack
+ * 3. Trim stack if over limit
+ * 4. Update UI button states
+ * 5. Schedule cleanup if memory usage is high
+ * 
+ * @throws {Error} When canvas.toDataURL() fails (security/memory constraints)
+ * @returns {void}
+ * 
+ * @example
+ * // After completing a drawing stroke:
+ * saveState(); // Captures current canvas state
+ * // User can now undo to return to pre-stroke state
  */
 function saveState() {
   try {
-    // Use PNG format to preserve transparency for eraser
+    // STEP 1: Serialize canvas to compressed PNG data URL
+    // PNG format preserves transparency needed for eraser effects
+    // Data URL format: "data:image/png;base64,iVBORw0KGgoAAAANSUhE..."
     const dataUrl = canvas.toDataURL('image/png');
 
-    // Save current state and clear redo stack
+    // STEP 2: Update undo/redo stacks
+    // Push current state to undo stack
     undoStack.push(dataUrl);
+    
+    // Clear redo stack (standard undo/redo behavior)
+    // Any new action invalidates all "future" states
     redoStack = [];
 
-    // Limit undo stack size to prevent memory issues
+    // STEP 3: Memory management - enforce stack size limits
     if (undoStack.length > UNDO_STACK_LIMIT) {
-      // Remove the oldest states to keep within limit
+      // Calculate how many excess states to remove
       const excess = undoStack.length - UNDO_STACK_LIMIT;
+      
+      // Remove oldest states from beginning of stack
+      // splice(0, excess) removes 'excess' items starting from index 0
       undoStack.splice(0, excess);
     }
 
-    // Update UI elements
+    // STEP 4: Update UI to reflect new undo/redo availability
     updateUndoRedoButtons();
 
-    // Schedule memory cleanup if the stack is getting large
+    // STEP 5: Proactive memory management
+    // Schedule cleanup when stack is getting large to prevent memory pressure
     if (undoStack.length > UNDO_STACK_LIMIT / 2) {
       setTimeout(() => {
+        // Only cleanup if tab is hidden (user not actively drawing)
         if (document.hidden) {
           trimUndoRedoStacks();
         }
-      }, 5000);
+      }, 5000); // 5 second delay allows for immediate undo operations
     }
+    
   } catch (err) {
+    // Handle potential errors:
+    // - Canvas tainted by cross-origin images
+    // - Insufficient memory for PNG encoding
+    // - Browser security restrictions
     console.error('Error saving canvas state:', err);
     showToast('Error saving canvas state', 'info');
   }
