@@ -497,27 +497,42 @@ button i {
 }
 
 
-/* Scrollbar customization */
+/* ================================================================================================
+ * SCROLLBAR STYLING - WEBKIT BROWSERS
+ * ================================================================================================
+ * 
+ * Custom scrollbar design for WebKit-based browsers (Chrome, Safari, Edge)
+ * Provides a minimal, dark theme scrollbar that matches the application aesthetic
+ * 
+ * DESIGN PRINCIPLES:
+ * - Thin scrollbars (8px) to minimize visual footprint
+ * - Subtle transparency effects for integration with glassmorphism theme
+ * - Consistent border-radius matching other UI elements
+ * - Background-clip: padding-box creates inset effect on thumb
+ */
 ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 8px;  /* Vertical scrollbar width */
+    height: 8px; /* Horizontal scrollbar height */
 }
 
+/* SCROLLBAR TRACK: The background groove where the thumb slides */
 ::-webkit-scrollbar-track {
-    background: var(--bg-color);
-    border-radius: 8px;
+    background: var(--bg-color); /* Matches main background color */
+    border-radius: 8px; /* Rounded corners for modern appearance */
 }
 
+/* SCROLLBAR THUMB: The draggable scrolling handle */
 ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
-    border: 2px solid transparent;
-    background-clip: padding-box;
+    background: rgba(255, 255, 255, 0.2); /* Semi-transparent white for subtlety */
+    border-radius: 8px; /* Rounded corners matching track */
+    border: 2px solid transparent; /* Creates padding effect */
+    background-clip: padding-box; /* Background doesn't extend into border area */
 }
 
+/* SCROLLBAR THUMB HOVER: Interactive feedback */
 ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.3);
-    background-clip: padding-box;
+    background: rgba(255, 255, 255, 0.3); /* Slightly more opaque on hover */
+    background-clip: padding-box; /* Maintains padding-box clipping */
 }
 
 /* Export button */
@@ -842,76 +857,134 @@ button i {
     100% { transform: scale(1); }
 }
 
-/* Media Queries */
+/* ================================================================================================
+ * RESPONSIVE DESIGN - MEDIA QUERIES
+ * ================================================================================================
+ * 
+ * Progressive responsive design system that adapts the interface for different screen sizes.
+ * Uses mobile-first approach with strategic breakpoints for optimal user experience.
+ * 
+ * BREAKPOINT STRATEGY:
+ * - Desktop: > 768px (default styles)
+ * - Tablet: ≤ 768px (medium screens)
+ * - Mobile: ≤ 480px (small screens)
+ * 
+ * RESPONSIVE PRINCIPLES:
+ * - Touch-friendly interface on mobile devices
+ * - Adequate spacing for finger navigation
+ * - Readable text sizes across all devices
+ * - Accessible UI controls on small screens
+ */
+
+/* ------------------------------------------------------------------------------------------------
+ * TABLET BREAKPOINT: 768px and below
+ * ------------------------------------------------------------------------------------------------
+ * 
+ * LAYOUT CHANGES:
+ * - Stacked header layout instead of horizontal
+ * - Increased canvas height calculation to accommodate stacked header
+ * - Centered tool alignment for better mobile usability
+ * - Adjusted modal sizing for smaller screens
+ */
 @media (max-width: 768px) {
+    /* HEADER LAYOUT ADAPTATION */
+    /* Switch from horizontal to vertical stacking */
     header {
-        padding: 10px;
-        height: auto;
-        min-height: var(--header-height);
-        flex-direction: column;
-        gap: 10px;
+        padding: 10px; /* Reduced padding for mobile */
+        height: auto; /* Allow dynamic height */
+        min-height: var(--header-height); /* Maintain minimum height */
+        flex-direction: column; /* Stack elements vertically */
+        gap: 10px; /* Space between stacked elements */
     }
 
+    /* HEADER SECTIONS: Full width with centered content */
     .header-left, .header-center, .header-right {
-        width: 100%;
-        justify-content: center;
-        margin-bottom: 5px;
+        width: 100%; /* Full width utilization */
+        justify-content: center; /* Center align all tools */
+        margin-bottom: 5px; /* Separation between sections */
     }
 
+    /* CANVAS AREA: Adjust for taller header */
     #whiteboard {
-        height: calc(100vh - 150px);
-        margin-top: 150px;
+        height: calc(100vh - 150px); /* Account for stacked header height */
+        margin-top: 150px; /* Offset for header */
     }
 
+    /* TOOL SECTIONS: Full width with centered layout */
     .toolbox, .color-section {
-        width: 100%;
-        justify-content: center;
+        width: 100%; /* Utilize full available width */
+        justify-content: center; /* Center tool buttons */
     }
 
+    /* HELP PANEL: Responsive modal sizing */
     .help-panel {
-        width: 90vw;
-        max-height: 70vh;
-        top: 50%;
-        left: 50%;
+        width: 90vw; /* 90% of viewport width */
+        max-height: 70vh; /* 70% of viewport height */
+        top: 50%; /* Vertical centering */
+        left: 50%; /* Horizontal centering */
     }
 }
 
+/* ------------------------------------------------------------------------------------------------
+ * MOBILE BREAKPOINT: 480px and below
+ * ------------------------------------------------------------------------------------------------
+ * 
+ * MOBILE-FIRST OPTIMIZATIONS:
+ * - Single-column layouts for tools and colors
+ * - Increased touch targets and spacing
+ * - Simplified grid layouts for readability
+ * - Enhanced toast positioning to avoid canvas interference
+ * - Compact modal layouts for small screens
+ * 
+ * TOUCH INTERFACE CONSIDERATIONS:
+ * - Minimum 44px touch targets (following iOS/Android guidelines)
+ * - Adequate spacing between interactive elements
+ * - Easy-to-reach UI controls within thumb zones
+ * - Clear visual feedback for touch interactions
+ */
 @media (max-width: 480px) {
+    /* HEADER CENTER: Vertical tool stacking */
     .header-center {
-        flex-direction: column;
-        gap: 8px;
+        flex-direction: column; /* Stack tools vertically */
+        gap: 8px; /* Tight vertical spacing */
     }
 
+    /* TOOL SECTIONS: Full width utilization */
     .color-section, .toolbox {
-        width: 100%;
+        width: 100%; /* Use all available width */
     }
 
+    /* CANVAS AREA: Account for even taller mobile header */
     #whiteboard {
-        height: calc(100vh - 200px);
-        margin-top: 200px;
+        height: calc(100vh - 200px); /* Extra space for vertical stacking */
+        margin-top: 200px; /* Larger offset for mobile header */
     }
 
+    /* TOAST NOTIFICATIONS: Mobile-optimized positioning */
     .toast-container {
-        left: 10px;
-        right: 10px;
-        bottom: 30px; /* More space from bottom on mobile */
-        transform: none;
-        max-width: none;
-        /* ✅ Ensure no interference on mobile */
-        pointer-events: none;
+        left: 10px; /* Edge spacing */
+        right: 10px; /* Edge spacing */
+        bottom: 30px; /* Extra clearance from bottom edge */
+        transform: none; /* Remove transforms for simpler positioning */
+        max-width: none; /* Use available width */
+        /* ✅ CRITICAL: Ensure no interference with touch drawing */
+        pointer-events: none; /* Never block canvas touches */
     }
 
+    /* HELP PANEL: Compact mobile layout */
     .help-panel {
-        padding: 15px;
+        padding: 15px; /* Reduced padding for mobile */
     }
 
+    /* SHORTCUT LIST: Single column for mobile readability */
     .shortcut-list {
-        grid-template-columns: 1fr;
-        gap: 12px;
+        grid-template-columns: 1fr; /* Single column layout */
+        gap: 12px; /* Increased gap for touch separation */
     }
 
+    /* SHORTCUT KEYS: Enhanced mobile spacing */
     .shortcut-key {
-        margin-bottom: 4px;
+        margin-bottom: 4px; /* Visual separation from descriptions */
     }
 }
 

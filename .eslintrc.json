@@ -1,18 +1,88 @@
 {
+  // ================================================================================
+  // ESLINT CONFIGURATION - CODE QUALITY ENFORCEMENT
+  // ================================================================================
+  //
+  // Professional ESLint setup for the Thick Lines drawing application.
+  // Enforces consistent code style, prevents common errors, and maintains
+  // high code quality across the entire codebase.
+  //
+  // CONFIGURATION STRATEGY:
+  // - Browser-first environment with Node.js compatibility
+  // - ES2021 feature support for modern JavaScript
+  // - Jest testing framework integration
+  // - Conservative rule set focusing on error prevention
+  //
+  // QUALITY GATES:
+  // - Syntax error prevention
+  // - Undefined variable detection
+  // - Unreachable code elimination
+  // - Best practice enforcement
+  
+  // EXECUTION ENVIRONMENT CONFIGURATION
+  // Defines the JavaScript environments where the code will run
+  // Each environment provides specific global variables and behaviors
   "env": {
+    // BROWSER ENVIRONMENT
+    // Enables browser-specific globals like window, document, console
+    // Essential for Canvas API and DOM manipulation code
     "browser": true,
+    
+    // ES2021 LANGUAGE FEATURES
+    // Enables modern JavaScript syntax and built-in objects
+    // Includes Promise, async/await, optional chaining, nullish coalescing
     "es2021": true,
+    
+    // NODE.JS ENVIRONMENT
+    // Enables Node.js globals like global, process, Buffer
+    // Required for build tools, configuration files, and test setup
     "node": true,
+    
+    // JEST TESTING FRAMEWORK
+    // Enables Jest globals like describe, test, expect, beforeEach
+    // Prevents "undefined variable" errors in test files
     "jest": true
   },
+  
+  // RULE SET EXTENSION
+  // Inherits from ESLint's recommended configuration
+  // Provides a solid foundation of error-prevention rules
   "extends": [
+    // ESLINT RECOMMENDED RULES
+    // Industry-standard rule set focusing on:
+    // - Syntax errors and potential runtime errors
+    // - Unreachable code detection
+    // - Variable declaration and usage validation
+    // - Best practice enforcement for common pitfalls
     "eslint:recommended"
   ],
+  
+  // JAVASCRIPT PARSER CONFIGURATION
+  // Defines how ESLint should parse the JavaScript code
   "parserOptions": {
+    // ECMASCRIPT VERSION
+    // ECMAScript 2021 (version 12) enables modern syntax:
+    // - Async/await, arrow functions, destructuring
+    // - Template literals, spread operator, rest parameters
+    // - Optional chaining (?.), nullish coalescing (??)
+    // - Private class fields, logical assignment operators
     "ecmaVersion": 12,
+    
+    // MODULE SYSTEM TYPE
+    // "script" mode for traditional script files (not ES modules)
+    // Appropriate for browser applications using script tags
+    // Allows variables to be in global scope without module wrapper
     "sourceType": "script"
   },
+  
+  // CUSTOM RULE OVERRIDES
+  // Project-specific rule customizations
+  // Currently using recommended defaults without modifications
+  // Future customizations can be added here as needed
   "rules": {
+    // No custom rules defined - using ESLint recommended defaults
+    // This conservative approach prevents over-linting while ensuring
+    // essential error prevention and code quality standards
   }
 }
 

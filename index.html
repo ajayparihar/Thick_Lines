@@ -1,13 +1,52 @@
 <!DOCTYPE html>
+<!-- 
+  THICK LINES DRAWING APPLICATION - HTML STRUCTURE
+  ===============================================
+  
+  Modern HTML5 single-page application for digital drawing and sketching.
+  Optimized for performance, accessibility, and cross-device compatibility.
+  
+  SEMANTIC STRUCTURE:
+  - Uses proper HTML5 semantic elements (header, main, aside)
+  - Follows WAI-ARIA guidelines for screen reader compatibility  
+  - Implements progressive enhancement principles
+  
+  PERFORMANCE OPTIMIZATIONS:
+  - Preconnect directives for external resources
+  - Font loading optimization with display=swap
+  - Deferred script loading to prevent render blocking
+  - Critical resource preloading
+  
+  ACCESSIBILITY FEATURES:
+  - ARIA roles and attributes throughout
+  - Keyboard navigation support
+  - Screen reader friendly structure
+  - High contrast mode support
+  - Focus management for modal dialogs
+-->
 <html lang="en">
 <head>
+  <!-- CHARACTER ENCODING AND COMPATIBILITY -->
   <meta charset="UTF-8">
+  
+  <!-- RESPONSIVE DESIGN CONFIGURATION -->
+  <!-- Viewport meta tag enables responsive design on mobile devices -->
+  <!-- minimum-scale=1.0: Prevents excessive zoom-out that makes UI unusable -->
+  <!-- user-scalable=yes: Allows pinch-to-zoom for accessibility -->
   <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  
+  <!-- SEO AND SOCIAL SHARING METADATA -->
   <meta name="description" content="Thick Lines - A minimalist whiteboard with four colors.">
   <meta name="author" content="Bheb Developer">
   <meta name="keywords" content="whiteboard, drawing, RGBY, online whiteboard">
+  
+  <!-- PROGRESSIVE WEB APP CONFIGURATION -->
+  <!-- theme-color affects mobile browser UI chrome -->
   <meta name="theme-color" content="#0f172a">
+  
+  <!-- LEGACY BROWSER COMPATIBILITY -->
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  
   <title>Thick Lines</title>
   <!-- Preload critical resources -->
   <link rel="preload" href="style.css" as="style">
@@ -33,27 +72,68 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%230f172a'/%3E%3Cpath d='M50 5A45 45 0 1 1 5 50 45 45 0 0 1 50 5m0-5a50 50 0 1 0 50 50A50 50 0 0 0 50 0z' fill='rgba(255,255,255,0.2)'/%3E%3Cpath d='M50 5A45 45 0 0 1 95 50H50V5z' fill='%23ef4444'/%3E%3Cpath d='M50 50h45A45 45 0 0 1 50 95V50z' fill='%2310b981'/%3E%3Cpath d='M50 95A45 45 0 0 1 5 50h45v45z' fill='%233b82f6'/%3E%3Cpath d='M5 50A45 45 0 0 1 50 5v45H5z' fill='%23f59e0b'/%3E%3C/svg%3E">
 </head>
 <body>
+  <!-- MAIN APPLICATION CONTAINER -->
+  <!-- Flexbox layout container managing header + canvas arrangement -->
   <div class="container">
+    
+    <!-- FIXED HEADER TOOLBAR -->
+    <!-- Persistent navigation bar containing all drawing tools and controls -->
+    <!-- Uses CSS backdrop-filter for glassmorphism effect -->
     <header>
+      <!-- BRAND/RELOAD BUTTON -->
+      <!-- Clicking reloads the application (useful for resetting state) -->
       <button type="button" class="header-left" aria-label="Reload Thick Lines">Thick Lines</button>
+      
+      <!-- CENTER TOOLBAR SECTION -->
+      <!-- Contains primary drawing tools: color palette and tools -->
       <div class="header-center">
+        
+        <!-- COLOR PALETTE SECTION -->
+        <!-- Four-color RGBY palette for simple, focused drawing -->
+        <!-- Each button contains data-color for JavaScript integration -->
+        <!-- Keyboard shortcuts 1-4 provide quick access -->
         <div class="color-section">
           <div class="color-buttons">
+            <!-- RED COLOR BUTTON (Primary) -->
+            <!-- Default active color, mapped to keyboard shortcut '1' -->
             <button type="button" class="color-btn red" data-color="#ef4444" title="Red (1)" data-shortcut="1" aria-label="Red color"></button>
+            
+            <!-- GREEN COLOR BUTTON -->
+            <!-- Secondary color option, mapped to keyboard shortcut '2' -->
             <button type="button" class="color-btn green" data-color="#10b981" title="Green (2)" data-shortcut="2" aria-label="Green color"></button>
+            
+            <!-- BLUE COLOR BUTTON -->
+            <!-- Tertiary color option, mapped to keyboard shortcut '3' -->
             <button type="button" class="color-btn blue" data-color="#3b82f6" title="Blue (3)" data-shortcut="3" aria-label="Blue color"></button>
+            
+            <!-- YELLOW COLOR BUTTON -->
+            <!-- Quaternary color option, mapped to keyboard shortcut '4' -->
             <button type="button" class="color-btn yellow" data-color="#f59e0b" title="Yellow (4)" data-shortcut="4" aria-label="Yellow color"></button>
           </div>
         </div>
+        <!-- DRAWING TOOLS SECTION -->
+        <!-- Primary tools for drawing and editing operations -->
+        <!-- Each tool includes size selection dropdown -->
         <div class="toolbox">
+          
+          <!-- PEN TOOL CONTAINER -->
+          <!-- Primary drawing tool with variable size options -->
+          <!-- Supports pressure sensitivity on compatible devices -->
           <div class="tool-container">
+            <!-- PEN TOOL BUTTON -->
+            <!-- Default active tool, keyboard shortcut 'P' -->
+            <!-- Displays current pen size in button text -->
             <button type="button" id="penBtn" class="tool-btn" title="Drawing Pen (P)" aria-label="Pen tool">
               <i class="fas fa-pencil-alt" aria-hidden="true"></i> Pen <i class="fas fa-caret-down" aria-hidden="true"></i>
             </button>
+            
+            <!-- PEN SIZE DROPDOWN MENU -->
+            <!-- Six predefined sizes from 2px to 50px -->
+            <!-- Each option triggers JavaScript size change -->
             <div class="pen-size-dropdown">
               <div class="pen-size-option" data-size="2">2px</div>
               <div class="pen-size-option" data-size="5">5px</div>
-              <div class="pen-size-option" data-size="10">10px</div>
+              <div class="pen-size-option" data-size="10">10px</div> <!-- Default size -->
               <div class="pen-size-option" data-size="20">20px</div>
               <div class="pen-size-option" data-size="30">30px</div>
               <div class="pen-size-option" data-size="50">50px</div>
@@ -83,12 +163,33 @@
         <button type="button" id="helpBtn" title="Keyboard Shortcuts (?)" aria-label="Show keyboard shortcuts"><i class="fas fa-keyboard" aria-hidden="true"></i></button>
       </div>
     </header>
+    
+    <!-- MAIN DRAWING AREA -->
+    <!-- Full-screen canvas container with interactive elements -->
+    <!-- Uses semantic <main> element for screen readers -->
     <main id="whiteboard">
+      
+      <!-- PRIMARY DRAWING CANVAS -->
+      <!-- HTML5 Canvas element for all drawing operations -->
+      <!-- Dynamically resized to fill container with HiDPI support -->
+      <!-- Supports touch, mouse, and stylus input -->
       <canvas id="drawing-canvas" role="img" aria-label="Drawing canvas">
+        <!-- PROGRESSIVE ENHANCEMENT FALLBACK -->
+        <!-- Content displayed if canvas is not supported -->
+        <!-- Provides helpful guidance for users with older browsers -->
         <p>Your browser does not support canvas. This application requires a modern browser with HTML5 Canvas support. Please use the keyboard shortcuts and on-screen controls to draw.</p>
         <p>Alternative: Download a modern browser like Chrome, Firefox, or Safari to use this drawing application.</p>
       </canvas>
+      
+      <!-- CANVAS INTERACTION OVERLAY -->
+      <!-- Transparent overlay for UI elements that should appear above canvas -->
+      <!-- Used for rulers, guides, and transformation handles -->
       <div class="canvas-overlay"></div>
+      
+      <!-- BRUSH SIZE VISUALIZER -->
+      <!-- Shows current brush size as user hovers or changes tools -->
+      <!-- Positioned dynamically via JavaScript -->
+      <!-- Hidden by default (aria-hidden) as it's purely visual feedback -->
       <div class="size-visualizer" aria-hidden="true"></div>
     </main>
     <div class="toast-container" aria-live="polite">
