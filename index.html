@@ -12,12 +12,23 @@
   <!-- Preload critical resources -->
   <link rel="preload" href="style.css" as="style">
   <link rel="stylesheet" href="style.css">
-  <!-- Preconnect to external domains -->
+  <!-- EXTERNAL DEPENDENCY OPTIMIZATION -->
+  <!-- Preconnect directives establish early connections to external domains -->
+  <!-- This reduces latency by performing DNS lookups, TCP handshakes, and TLS negotiations early -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://cdnjs.cloudflare.com">
-  <!-- Favicon and fonts -->
+  
+  <!-- EXTERNAL FONT DEPENDENCY: Google Fonts Inter -->
+  <!-- Inter is a highly optimized font designed for UI interfaces -->
+  <!-- Loaded weights: 400 (regular), 500 (medium), 600 (semibold), 700 (bold) -->
+  <!-- display=swap ensures text remains visible during font load -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- EXTERNAL ICON DEPENDENCY: Font Awesome 6.2.0 -->
+  <!-- Provides vector icons for UI elements (pen, eraser, undo, etc.) -->
+  <!-- Loaded from CDNJS with integrity hash for security -->
+  <!-- crossorigin and referrerpolicy attributes enhance security -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css" integrity="sha512-xh6O/CkQoPOWDdYTDqeRdPCVd1SpvCA9XXcUnZS2FmJNp1coAFzvtCN9BmamE+4aHK8yyUHUSCcJHgXloTyT2A==" crossorigin="anonymous" referrerpolicy="no-referrer">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%230f172a'/%3E%3Cpath d='M50 5A45 45 0 1 1 5 50 45 45 0 0 1 50 5m0-5a50 50 0 1 0 50 50A50 50 0 0 0 50 0z' fill='rgba(255,255,255,0.2)'/%3E%3Cpath d='M50 5A45 45 0 0 1 95 50H50V5z' fill='%23ef4444'/%3E%3Cpath d='M50 50h45A45 45 0 0 1 50 95V50z' fill='%2310b981'/%3E%3Cpath d='M50 95A45 45 0 0 1 5 50h45v45z' fill='%233b82f6'/%3E%3Cpath d='M5 50A45 45 0 0 1 50 5v45H5z' fill='%23f59e0b'/%3E%3C/svg%3E">
 </head>
