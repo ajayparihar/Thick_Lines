@@ -1,254 +1,571 @@
 <!DOCTYPE html>
-<!-- 
-  THICK LINES DRAWING APPLICATION - HTML STRUCTURE
-  ===============================================
-  
-  Modern HTML5 single-page application for digital drawing and sketching.
-  Optimized for performance, accessibility, and cross-device compatibility.
-  
-  SEMANTIC STRUCTURE:
-  - Uses proper HTML5 semantic elements (header, main, aside)
-  - Follows WAI-ARIA guidelines for screen reader compatibility  
-  - Implements progressive enhancement principles
-  
-  PERFORMANCE OPTIMIZATIONS:
-  - Preconnect directives for external resources
-  - Font loading optimization with display=swap
-  - Deferred script loading to prevent render blocking
-  - Critical resource preloading
-  
-  ACCESSIBILITY FEATURES:
-  - ARIA roles and attributes throughout
-  - Keyboard navigation support
-  - Screen reader friendly structure
-  - High contrast mode support
-  - Focus management for modal dialogs
--->
 <html lang="en">
 <head>
-  <!-- CHARACTER ENCODING AND COMPATIBILITY -->
-  <meta charset="UTF-8">
-  
-  <!-- RESPONSIVE DESIGN CONFIGURATION -->
-  <!-- Viewport meta tag enables responsive design on mobile devices -->
-  <!-- minimum-scale=1.0: Prevents excessive zoom-out that makes UI unusable -->
-  <!-- user-scalable=yes: Allows pinch-to-zoom for accessibility -->
-  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
-  
-  <!-- SEO AND SOCIAL SHARING METADATA -->
-  <meta name="description" content="Thick Lines - A minimalist whiteboard with four colors.">
-  <meta name="author" content="Bheb Developer">
-  <meta name="keywords" content="whiteboard, drawing, RGBY, online whiteboard">
-  
-  <!-- PROGRESSIVE WEB APP CONFIGURATION -->
-  <!-- theme-color affects mobile browser UI chrome -->
-  <meta name="theme-color" content="#0f172a">
-  
-  <!-- LEGACY BROWSER COMPATIBILITY -->
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  
-  <title>Thick Lines</title>
-  <!-- Preload critical resources -->
-  <link rel="preload" href="style.css" as="style">
-  <link rel="stylesheet" href="style.css">
-  <!-- EXTERNAL DEPENDENCY OPTIMIZATION -->
-  <!-- Preconnect directives establish early connections to external domains -->
-  <!-- This reduces latency by performing DNS lookups, TCP handshakes, and TLS negotiations early -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
-  
-  <!-- EXTERNAL FONT DEPENDENCY: Google Fonts Inter -->
-  <!-- Inter is a highly optimized font designed for UI interfaces -->
-  <!-- Loaded weights: 400 (regular), 500 (medium), 600 (semibold), 700 (bold) -->
-  <!-- display=swap ensures text remains visible during font load -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  
-  <!-- EXTERNAL ICON DEPENDENCY: Font Awesome 6.2.0 -->
-  <!-- Provides vector icons for UI elements (pen, eraser, undo, etc.) -->
-  <!-- Loaded from CDNJS with integrity hash for security -->
-  <!-- crossorigin and referrerpolicy attributes enhance security -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css" integrity="sha512-xh6O/CkQoPOWDdYTDqeRdPCVd1SpvCA9XXcUnZS2FmJNp1coAFzvtCN9BmamE+4aHK8yyUHUSCcJHgXloTyT2A==" crossorigin="anonymous" referrerpolicy="no-referrer">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%230f172a'/%3E%3Cpath d='M50 5A45 45 0 1 1 5 50 45 45 0 0 1 50 5m0-5a50 50 0 1 0 50 50A50 50 0 0 0 50 0z' fill='rgba(255,255,255,0.2)'/%3E%3Cpath d='M50 5A45 45 0 0 1 95 50H50V5z' fill='%23ef4444'/%3E%3Cpath d='M50 50h45A45 45 0 0 1 50 95V50z' fill='%2310b981'/%3E%3Cpath d='M50 95A45 45 0 0 1 5 50h45v45z' fill='%233b82f6'/%3E%3Cpath d='M5 50A45 45 0 0 1 50 5v45H5z' fill='%23f59e0b'/%3E%3C/svg%3E">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Thick Lines - A powerful drawing tool with customizable brushes and accessibility features">
+    <title>Thick Lines - Drawing Tool</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- MAIN APPLICATION CONTAINER -->
-  <!-- Flexbox layout container managing header + canvas arrangement -->
-  <div class="container">
+    <!-- Skip links for accessibility -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <a href="#drawing-canvas" class="skip-link">Skip to drawing canvas</a>
     
-    <!-- FIXED HEADER TOOLBAR -->
-    <!-- Persistent navigation bar containing all drawing tools and controls -->
-    <!-- Uses CSS backdrop-filter for glassmorphism effect -->
-    <header>
-      <!-- BRAND/RELOAD BUTTON -->
-      <!-- Clicking reloads the application (useful for resetting state) -->
-      <button type="button" class="header-left" aria-label="Reload Thick Lines">Thick Lines</button>
-      
-      <!-- CENTER TOOLBAR SECTION -->
-      <!-- Contains primary drawing tools: color palette and tools -->
-      <div class="header-center">
-        
-        <!-- COLOR PALETTE SECTION -->
-        <!-- Four-color RGBY palette for simple, focused drawing -->
-        <!-- Each button contains data-color for JavaScript integration -->
-        <!-- Keyboard shortcuts 1-4 provide quick access -->
-        <div class="color-section">
-          <div class="color-buttons">
-            <!-- RED COLOR BUTTON (Primary) -->
-            <!-- Default active color, mapped to keyboard shortcut '1' -->
-            <button type="button" class="color-btn red" data-color="#ef4444" title="Red (1)" data-shortcut="1" aria-label="Red color"></button>
-            
-            <!-- GREEN COLOR BUTTON -->
-            <!-- Secondary color option, mapped to keyboard shortcut '2' -->
-            <button type="button" class="color-btn green" data-color="#10b981" title="Green (2)" data-shortcut="2" aria-label="Green color"></button>
-            
-            <!-- BLUE COLOR BUTTON -->
-            <!-- Tertiary color option, mapped to keyboard shortcut '3' -->
-            <button type="button" class="color-btn blue" data-color="#3b82f6" title="Blue (3)" data-shortcut="3" aria-label="Blue color"></button>
-            
-            <!-- YELLOW COLOR BUTTON -->
-            <!-- Quaternary color option, mapped to keyboard shortcut '4' -->
-            <button type="button" class="color-btn yellow" data-color="#f59e0b" title="Yellow (4)" data-shortcut="4" aria-label="Yellow color"></button>
-          </div>
-        </div>
-        <!-- DRAWING TOOLS SECTION -->
-        <!-- Primary tools for drawing and editing operations -->
-        <!-- Each tool includes size selection dropdown -->
-        <div class="toolbox">
-          
-          <!-- PEN TOOL CONTAINER -->
-          <!-- Primary drawing tool with variable size options -->
-          <!-- Supports pressure sensitivity on compatible devices -->
-          <div class="tool-container">
-            <!-- PEN TOOL BUTTON -->
-            <!-- Default active tool, keyboard shortcut 'P' -->
-            <!-- Displays current pen size in button text -->
-            <button type="button" id="penBtn" class="tool-btn" title="Drawing Pen (P)" aria-label="Pen tool">
-              <i class="fas fa-pencil-alt" aria-hidden="true"></i> Pen <i class="fas fa-caret-down" aria-hidden="true"></i>
+    <!-- Header with title and main controls -->
+    <header class="app-header" role="banner">
+        <h1 class="app-title">Thick Lines</h1>
+        <div class="header-controls">
+            <!-- Theme toggle -->
+            <button id="themeToggle" class="control-btn theme-btn" 
+                    aria-label="Toggle between light and dark theme" 
+                    title="Toggle theme">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="5"/>
+                    <line x1="12" y1="1" x2="12" y2="3"/>
+                    <line x1="12" y1="21" x2="12" y2="23"/>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                    <line x1="1" y1="12" x2="3" y2="12"/>
+                    <line x1="21" y1="12" x2="23" y2="12"/>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                </svg>
+                <span class="sr-only">Theme toggle</span>
             </button>
             
-            <!-- PEN SIZE DROPDOWN MENU -->
-            <!-- Six predefined sizes from 2px to 50px -->
-            <!-- Each option triggers JavaScript size change -->
-            <div class="pen-size-dropdown">
-              <div class="pen-size-option" data-size="2">2px</div>
-              <div class="pen-size-option" data-size="5">5px</div>
-              <div class="pen-size-option" data-size="10">10px</div> <!-- Default size -->
-              <div class="pen-size-option" data-size="20">20px</div>
-              <div class="pen-size-option" data-size="30">30px</div>
-              <div class="pen-size-option" data-size="50">50px</div>
-            </div>
-          </div>
-          <div class="tool-container">
-            <button type="button" id="eraserBtn" class="tool-btn" title="Eraser (E)" aria-label="Eraser tool">
-              <i class="fas fa-eraser" aria-hidden="true"></i> Eraser <i class="fas fa-caret-down" aria-hidden="true"></i>
+            <!-- Help button -->
+            <button id="helpBtn" class="control-btn help-btn" 
+                    aria-label="Show help and keyboard shortcuts" 
+                    title="Help (?)">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                    <point x="12" y="17"/>
+                </svg>
+                <span class="sr-only">Help</span>
             </button>
-            <div class="eraser-size-dropdown">
-              <div class="eraser-size-option" data-size="2">2px</div>
-              <div class="eraser-size-option" data-size="5">5px</div>
-              <div class="eraser-size-option" data-size="10">10px</div>
-              <div class="eraser-size-option" data-size="20">20px</div>
-              <div class="eraser-size-option" data-size="30">30px</div>
-              <div class="eraser-size-option" data-size="50">50px</div>
-            </div>
-          </div>
-          <button type="button" id="undoBtn" title="Undo Last Action (Ctrl+Z)" aria-label="Undo"><i class="fas fa-undo" aria-hidden="true"></i></button>
-          <button type="button" id="redoBtn" title="Redo Last Action (Ctrl+Y)" aria-label="Redo"><i class="fas fa-redo" aria-hidden="true"></i></button>
         </div>
-      </div>
-      <div class="header-right">
-        <button type="button" id="contrastBtn" title="Toggle High Contrast Mode" aria-label="Toggle high contrast mode"><i class="fas fa-adjust" aria-hidden="true"></i> Contrast</button>
-        <button type="button" id="clearBtn" title="Clear Canvas (Shift+Delete)" aria-label="Clear canvas"><i class="fas fa-trash" aria-hidden="true"></i> Clear</button>
-        <button type="button" id="exportBtn" title="Export as Image (Ctrl+S)" aria-label="Export canvas"><i class="fas fa-download" aria-hidden="true"></i> Export</button>
-        <button type="button" id="helpBtn" title="Keyboard Shortcuts (?)" aria-label="Show keyboard shortcuts"><i class="fas fa-keyboard" aria-hidden="true"></i></button>
-      </div>
     </header>
-    
-    <!-- MAIN DRAWING AREA -->
-    <!-- Full-screen canvas container with interactive elements -->
-    <!-- Uses semantic <main> element for screen readers -->
-    <main id="whiteboard">
-      
-      <!-- PRIMARY DRAWING CANVAS -->
-      <!-- HTML5 Canvas element for all drawing operations -->
-      <!-- Dynamically resized to fill container with HiDPI support -->
-      <!-- Supports touch, mouse, and stylus input -->
-      <canvas id="drawing-canvas" role="img" aria-label="Drawing canvas">
-        <!-- PROGRESSIVE ENHANCEMENT FALLBACK -->
-        <!-- Content displayed if canvas is not supported -->
-        <!-- Provides helpful guidance for users with older browsers -->
-        <p>Your browser does not support canvas. This application requires a modern browser with HTML5 Canvas support. Please use the keyboard shortcuts and on-screen controls to draw.</p>
-        <p>Alternative: Download a modern browser like Chrome, Firefox, or Safari to use this drawing application.</p>
-      </canvas>
-      
-      <!-- CANVAS INTERACTION OVERLAY -->
-      <!-- Transparent overlay for UI elements that should appear above canvas -->
-      <!-- Used for rulers, guides, and transformation handles -->
-      <div class="canvas-overlay"></div>
-      
-      <!-- BRUSH SIZE VISUALIZER -->
-      <!-- Shows current brush size as user hovers or changes tools -->
-      <!-- Positioned dynamically via JavaScript -->
-      <!-- Hidden by default (aria-hidden) as it's purely visual feedback -->
-      <div class="size-visualizer" aria-hidden="true"></div>
+
+    <!-- Main toolbar -->
+    <nav class="toolbar" role="toolbar" aria-label="Drawing tools">
+        <!-- Tools section -->
+        <div class="tool-group" role="group" aria-labelledby="tools-label">
+            <label id="tools-label" class="group-label">Tools</label>
+            
+            <!-- Pen tool -->
+            <button id="penTool" class="tool-btn active" 
+                    data-tool="pen" 
+                    aria-label="Pen tool - draw with selected color and thickness" 
+                    aria-pressed="true"
+                    title="Pen tool">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 19l7-7 3 3-7 7-3-3z"/>
+                    <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+                    <path d="M2 2l7.586 7.586"/>
+                    <circle cx="11" cy="11" r="2"/>
+                </svg>
+                <span class="tool-name">Pen</span>
+            </button>
+            
+            <!-- Eraser tool -->
+            <button id="eraserTool" class="tool-btn" 
+                    data-tool="eraser" 
+                    aria-label="Eraser tool - remove drawings" 
+                    aria-pressed="false"
+                    title="Eraser tool">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 20H7l-4-4 4.5-4.5L18 2l2 2-10.5 10.5"/>
+                </svg>
+                <span class="tool-name">Eraser</span>
+            </button>
+        </div>
+
+        <!-- Color section -->
+        <div class="tool-group" role="group" aria-labelledby="colors-label">
+            <label id="colors-label" class="group-label">Colors</label>
+            
+            <button id="color1" class="color-btn active" 
+                    data-color="red" 
+                    style="--color: #ff4444"
+                    aria-label="Red color (Press 1)" 
+                    aria-pressed="true"
+                    title="Red (1)">
+                <span class="color-swatch"></span>
+                <kbd class="shortcut">1</kbd>
+            </button>
+            
+            <button id="color2" class="color-btn" 
+                    data-color="green" 
+                    style="--color: #44ff44"
+                    aria-label="Green color (Press 2)" 
+                    aria-pressed="false"
+                    title="Green (2)">
+                <span class="color-swatch"></span>
+                <kbd class="shortcut">2</kbd>
+            </button>
+            
+            <button id="color3" class="color-btn" 
+                    data-color="blue" 
+                    style="--color: #4444ff"
+                    aria-label="Blue color (Press 3)" 
+                    aria-pressed="false"
+                    title="Blue (3)">
+                <span class="color-swatch"></span>
+                <kbd class="shortcut">3</kbd>
+            </button>
+            
+            <button id="color4" class="color-btn" 
+                    data-color="yellow" 
+                    style="--color: #ffff44"
+                    aria-label="Yellow color (Press 4)" 
+                    aria-pressed="false"
+                    title="Yellow (4)">
+                <span class="color-swatch"></span>
+                <kbd class="shortcut">4</kbd>
+            </button>
+        </div>
+
+        <!-- Brush size section -->
+        <div class="tool-group" role="group" aria-labelledby="size-label">
+            <label id="size-label" class="group-label">Brush Size</label>
+            
+            <div class="slider-container">
+                <input type="range" id="brushSize" class="slider" 
+                       min="1" max="50" value="5" 
+                       aria-label="Brush thickness"
+                       title="Adjust brush thickness">
+                <output id="sizeDisplay" class="size-display" for="brushSize">5px</output>
+            </div>
+        </div>
+
+        <!-- Eraser size section -->
+        <div class="tool-group" role="group" aria-labelledby="eraser-size-label">
+            <label id="eraser-size-label" class="group-label">Eraser Size</label>
+            
+            <div class="slider-container">
+                <input type="range" id="eraserSize" class="slider" 
+                       min="10" max="100" value="50" 
+                       aria-label="Eraser thickness"
+                       title="Adjust eraser thickness">
+                <output id="eraserSizeDisplay" class="size-display" for="eraserSize">50px</output>
+            </div>
+        </div>
+
+        <!-- Canvas settings section -->
+        <div class="tool-group" role="group" aria-labelledby="canvas-label">
+            <label id="canvas-label" class="group-label">Canvas</label>
+            
+            <button id="canvasSettingsBtn" class="action-btn" 
+                    aria-label="Canvas size and settings" 
+                    title="Canvas settings">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="9" y1="9" x2="15" y2="9"/>
+                    <line x1="9" y1="15" x2="15" y2="15"/>
+                </svg>
+                <span class="action-name">Settings</span>
+            </button>
+        </div>
+
+        <!-- Actions section -->
+        <div class="tool-group actions-group" role="group" aria-labelledby="actions-label">
+            <label id="actions-label" class="group-label">Actions</label>
+            
+            <!-- Undo -->
+            <button id="undoBtn" class="action-btn" 
+                    aria-label="Undo last action (Ctrl+Z)" 
+                    title="Undo (Ctrl+Z)"
+                    disabled>
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 7v6h6"/>
+                    <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
+                </svg>
+                <span class="action-name">Undo</span>
+            </button>
+            
+            <!-- Redo -->
+            <button id="redoBtn" class="action-btn" 
+                    aria-label="Redo last action (Ctrl+Y)" 
+                    title="Redo (Ctrl+Y)"
+                    disabled>
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 7v6h-6"/>
+                    <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/>
+                </svg>
+                <span class="action-name">Redo</span>
+            </button>
+            
+            <!-- Clear -->
+            <button id="clearBtn" class="action-btn destructive" 
+                    aria-label="Clear entire canvas (Shift+Delete)" 
+                    title="Clear canvas (Shift+Delete)">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3,6 5,6 21,6"/>
+                    <path d="M19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"/>
+                    <line x1="10" y1="11" x2="10" y2="17"/>
+                    <line x1="14" y1="11" x2="14" y2="17"/>
+                </svg>
+                <span class="action-name">Clear</span>
+            </button>
+            
+            <!-- Export -->
+            <button id="exportBtn" class="action-btn primary" 
+                    aria-label="Export drawing as image (Ctrl+S)" 
+                    title="Export (Ctrl+S)">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7,10 12,15 17,10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                <span class="action-name">Export</span>
+            </button>
+            
+            <!-- Contrast toggle -->
+            <button id="contrastBtn" class="action-btn" 
+                    aria-label="Toggle high contrast mode" 
+                    title="High contrast mode"
+                    aria-pressed="false">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 2v20"/>
+                </svg>
+                <span class="action-name">Contrast</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main drawing area -->
+    <main id="main-content" class="main-content" role="main">
+        <div class="canvas-container" role="img" aria-label="Drawing canvas">
+            <canvas id="drawing-canvas" 
+                    class="drawing-canvas"
+                    width="1200" 
+                    height="800"
+                    role="img"
+                    aria-label="Drawing canvas - use mouse or touch to draw"
+                    tabindex="0">
+                Your browser doesn't support the HTML5 canvas element.
+            </canvas>
+            
+            <!-- Canvas info for screen readers -->
+            <div class="sr-only" aria-live="polite" id="canvas-status">
+                Canvas ready for drawing. Use tools above to select pen or eraser.
+            </div>
+        </div>
     </main>
-    <div class="toast-container" aria-live="polite">
-      <!-- Toasts will be inserted here dynamically -->
-    </div>
-    <!-- Help Panel -->
-    <aside class="help-panel" id="helpPanel" aria-label="Keyboard shortcuts" hidden>
-      <button type="button" class="help-close" id="closeHelpBtn" aria-label="Close help panel"><i class="fas fa-times" aria-hidden="true"></i></button>
-      <h2>Keyboard Shortcuts</h2>
-      <div class="shortcut-list">
-        <div class="shortcut-key">1-4</div>
-        <div class="shortcut-desc">Select colors (Red, Green, Blue, Yellow)</div>
-        <div class="shortcut-key">P</div>
-        <div class="shortcut-desc">Switch to Pen tool</div>
-        <div class="shortcut-key">E</div>
-        <div class="shortcut-desc">Switch to Eraser tool</div>
-        <div class="shortcut-key">Ctrl+Z</div>
-        <div class="shortcut-desc">Undo last action</div>
-        <div class="shortcut-key">Ctrl+Y</div>
-        <div class="shortcut-desc">Redo last action</div>
-        <div class="shortcut-key">Ctrl+S</div>
-        <div class="shortcut-desc">Export canvas as image</div>
-        <div class="shortcut-key">Shift+Delete</div>
-        <div class="shortcut-desc">Clear canvas</div>
-        <div class="shortcut-key">Middle Mouse + Drag</div>
-        <div class="shortcut-desc">Pan the canvas</div>
-        <div class="shortcut-key">?</div>
-        <div class="shortcut-desc">Show/hide this help panel</div>
-      </div>
-    </aside>
-    <!-- Context Menu -->
-    <div id="contextMenu" class="context-menu" aria-hidden="true">
-      <div class="context-menu-item" id="ctx-undo"><i class="fas fa-undo" aria-hidden="true"></i> Undo</div>
-      <div class="context-menu-item" id="ctx-redo"><i class="fas fa-redo" aria-hidden="true"></i> Redo</div>
-      <div class="context-menu-separator"></div>
-      <div class="context-menu-item" id="ctx-cut"><i class="fas fa-cut" aria-hidden="true"></i> Cut</div>
-      <div class="context-menu-item" id="ctx-copy"><i class="fas fa-copy" aria-hidden="true"></i> Copy</div>
-      <div class="context-menu-item" id="ctx-paste"><i class="fas fa-paste" aria-hidden="true"></i> Paste</div>
-      <div class="context-menu-separator"></div>
-      <div class="context-menu-item" id="ctx-clear"><i class="fas fa-trash" aria-hidden="true"></i> Clear All</div>
-    </div>
-    <!-- Loading Overlay -->
-    <div class="loading-overlay">
-      <div class="loading-spinner"></div>
+
+    <!-- Status bar -->
+    <div class="status-bar" role="status" aria-live="polite">
+        <div class="status-info">
+            <span id="currentTool">Pen tool selected</span> • 
+            <span id="currentColor">Red color</span> • 
+            <span id="currentSize">5px brush</span>
+        </div>
+        <div class="canvas-info">
+            <span id="canvasSize">1200×800</span>
+        </div>
     </div>
 
-    <!-- Themed Confirmation Modal -->
-    <div class="confirm-modal" id="confirmModal" role="dialog" aria-modal="true" aria-hidden="true" hidden>
-      <div class="confirm-modal-content">
-        <h3 id="confirmModalTitle">Confirm</h3>
-        <p id="confirmModalMessage">Are you sure?</p>
-        <div class="modal-actions">
-          <button type="button" id="confirmCancelBtn">Cancel</button>
-          <button type="button" id="confirmOkBtn" class="danger">Confirm</button>
+    <!-- Help modal -->
+    <div id="helpModal" class="modal" role="dialog" aria-labelledby="help-title" aria-hidden="true">
+        <div class="modal-overlay" aria-hidden="true"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="help-title">Thick Lines - Help & Keyboard Shortcuts</h2>
+                <button class="modal-close" aria-label="Close help" title="Close (Esc)">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <section class="help-section">
+                    <h3>Getting Started</h3>
+                    <ul>
+                        <li>Select a tool (Pen or Eraser) from the toolbar</li>
+                        <li>Choose your color by clicking color buttons or pressing 1-4</li>
+                        <li>Adjust brush/eraser size using the sliders</li>
+                        <li>Click and drag on the canvas to draw</li>
+                    </ul>
+                </section>
+                
+                <section class="help-section">
+                    <h3>Keyboard Shortcuts</h3>
+                    <div class="shortcut-grid">
+                        <div class="shortcut-item">
+                            <kbd>1</kbd> <span>Red color</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>2</kbd> <span>Green color</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>3</kbd> <span>Blue color</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>4</kbd> <span>Yellow color</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>P</kbd> <span>Select pen tool</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>E</kbd> <span>Select eraser tool</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>U</kbd> <span>Undo (alternative)</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>R</kbd> <span>Redo (alternative)</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>T</kbd> <span>Toggle theme</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>C</kbd> <span>Toggle contrast</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl+Z</kbd> <span>Undo</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl+Y</kbd> <span>Redo</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl+S</kbd> <span>Export image</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Shift+Delete</kbd> <span>Clear canvas</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>?</kbd> <span>Show this help</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Esc</kbd> <span>Close dialogs</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl+0</kbd> <span>Reset zoom to 100%</span>
+                        </div>
+                    </div>
+                </section>
+                
+                <section class="help-section">
+                    <h3>Accessibility Features</h3>
+                    <ul>
+                        <li>Full keyboard navigation with Tab and arrow keys</li>
+                        <li>Screen reader support with live announcements</li>
+                        <li>High contrast mode for better visibility</li>
+                        <li>Customizable brush and eraser sizes</li>
+                        <li>Clear visual feedback for all actions</li>
+                    </ul>
+                </section>
+                
+                <section class="help-section">
+                    <h3>Mobile & Touch Gestures</h3>
+                    <ul>
+                        <li>Single finger: Draw with selected tool</li>
+                        <li>Two fingers pinch: Zoom in/out (50%-300%)</li>
+                        <li>Ctrl+0: Reset zoom to 100%</li>
+                        <li>Optimized touch targets for easier interaction</li>
+                    </ul>
+                </section>
+                
+                <section class="help-section">
+                    <h3>Export Options</h3>
+                    <ul>
+                        <li>Multiple format support (PNG, JPEG)</li>
+                        <li>Quality adjustment for file size control</li>
+                        <li>Multiple resolution options (Original, HD, 4K)</li>
+                        <li>Transparent background preservation in PNG</li>
+                    </ul>
+                </section>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-primary modal-close">Got it!</button>
+            </div>
         </div>
-      </div>
     </div>
-  </div>
-  <!-- Defer script loading to improve page loading performance -->
-  <script src="app.js" defer></script>
+
+    <!-- Clear confirmation modal -->
+    <div id="clearModal" class="modal" role="dialog" aria-labelledby="clear-title" aria-hidden="true">
+        <div class="modal-overlay" aria-hidden="true"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="clear-title">Clear Canvas</h2>
+            </div>
+            
+            <div class="modal-body">
+                <p>Are you sure you want to clear the entire canvas? This action cannot be undone.</p>
+            </div>
+            
+            <div class="modal-footer">
+                <button id="clearCancel" class="btn btn-secondary">Cancel</button>
+                <button id="clearConfirm" class="btn btn-destructive">Clear Canvas</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Canvas settings modal -->
+    <div id="canvasModal" class="modal" role="dialog" aria-labelledby="canvas-settings-title" aria-hidden="true">
+        <div class="modal-overlay" aria-hidden="true"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="canvas-settings-title">Canvas Settings</h2>
+                <button class="modal-close" aria-label="Close canvas settings" title="Close (Esc)">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="canvas-options">
+                    <div class="option-group">
+                        <label class="option-label">Canvas Size</label>
+                        <div class="canvas-size-options">
+                            <label class="size-option">
+                                <input type="radio" name="canvasSize" value="small">
+                                <span>Small (800×600)</span>
+                            </label>
+                            <label class="size-option">
+                                <input type="radio" name="canvasSize" value="medium" checked>
+                                <span>Medium (1200×800)</span>
+                            </label>
+                            <label class="size-option">
+                                <input type="radio" name="canvasSize" value="large">
+                                <span>Large (1600×1200)</span>
+                            </label>
+                            <label class="size-option">
+                                <input type="radio" name="canvasSize" value="hd">
+                                <span>HD (1920×1080)</span>
+                            </label>
+                            <label class="size-option">
+                                <input type="radio" name="canvasSize" value="square">
+                                <span>Square (1000×1000)</span>
+                            </label>
+                            <label class="size-option">
+                                <input type="radio" name="canvasSize" value="custom">
+                                <span>Custom</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div id="customSizeInputs" class="option-group" style="display: none;">
+                        <label class="option-label">Custom Dimensions</label>
+                        <div class="custom-size-inputs">
+                            <div class="input-group">
+                                <label for="customWidth">Width</label>
+                                <input type="number" id="customWidth" min="100" max="4000" value="1200">
+                                <span>px</span>
+                            </div>
+                            <div class="input-group">
+                                <label for="customHeight">Height</label>
+                                <input type="number" id="customHeight" min="100" max="4000" value="800">
+                                <span>px</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="option-group">
+                        <div class="warning-box">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                                <line x1="12" y1="9" x2="12" y2="13"/>
+                                <line x1="12" y1="17" x2="12.01" y2="17"/>
+                            </svg>
+                            <div>
+                                <strong>Important:</strong> Changing canvas size will clear your current drawing. This action cannot be undone.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button id="canvasCancel" class="btn btn-secondary">Cancel</button>
+                <button id="canvasApply" class="btn btn-primary">Apply Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export format modal -->
+    <div id="exportModal" class="modal" role="dialog" aria-labelledby="export-title" aria-hidden="true">
+        <div class="modal-overlay" aria-hidden="true"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="export-title">Export Drawing</h2>
+                <button class="modal-close" aria-label="Close export options" title="Close (Esc)">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="export-options">
+                    <div class="option-group">
+                        <label class="option-label">File Format</label>
+                        <div class="format-options">
+                            <label class="format-option">
+                                <input type="radio" name="exportFormat" value="png" checked>
+                                <span class="format-info">
+                                    <strong>PNG</strong>
+                                    <small>Best quality, larger file size, supports transparency</small>
+                                </span>
+                            </label>
+                            <label class="format-option">
+                                <input type="radio" name="exportFormat" value="jpeg">
+                                <span class="format-info">
+                                    <strong>JPEG</strong>
+                                    <small>Good quality, smaller file size, white background</small>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="option-group">
+                        <label class="option-label">Quality <span id="qualityValue">90%</span></label>
+                        <input type="range" id="qualitySlider" min="10" max="100" value="90" class="quality-slider">
+                        <small class="option-note">Higher quality = larger file size</small>
+                    </div>
+                    
+                    <div class="option-group">
+                        <label class="option-label">Canvas Size</label>
+                        <div class="size-options">
+                            <label class="size-option">
+                                <input type="radio" name="exportSize" value="original" checked>
+                                <span>Original (1200×800)</span>
+                            </label>
+                            <label class="size-option">
+                                <input type="radio" name="exportSize" value="hd">
+                                <span>HD (1920×1080)</span>
+                            </label>
+                            <label class="size-option">
+                                <input type="radio" name="exportSize" value="4k">
+                                <span>4K (3840×2160)</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button id="exportCancel" class="btn btn-secondary">Cancel</button>
+                <button id="exportConfirm" class="btn btn-primary">Export Drawing</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast notification container -->
+    <div id="toast-container" class="toast-container" aria-live="polite" role="status"></div>
+
+    <!-- Screen reader announcements -->
+    <div id="sr-announcements" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+    <script src="script.js"></script>
 </body>
 </html>
